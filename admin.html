@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Arboleda Fest: panel de reservas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF6EA; --surface:#FFFFFF; --surface2:#F6ECD3; --ink:#12342A; --ink2:#52675D;
+  --green:#0F4A37; --green2:#1E7A5A; --gold:#A8791F; --line:#E7DBBA; --pink:#E5527F; --pink-soft:#FBDCE6;
+  --btn-bg:#0F4A37; --btn-ink:#FFF8E7; --err:#B3261E; --ok-bg:#DDF2E7; --warn-bg:#FFF0C9;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0B1F19; --surface:#122E25; --surface2:#17392E; --ink:#F6EEDB; --ink2:#B7C8BE;
+    --green:#E3B44F; --green2:#6CCB9F; --gold:#E3B44F; --line:#24493C; --pink:#F27BA0; --pink-soft:#432434;
+    --btn-bg:#E3B44F; --btn-ink:#10261E; --err:#FF8A80; --ok-bg:#16402F; --warn-bg:#463B18;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45}
+h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pink);outline-offset:2px;border-radius:8px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 60px}
+[hidden]{display:none!important}
+
+.top{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:14px 0;flex-wrap:wrap}
+.top h1{font-size:1.4rem;color:var(--green)}
+.top small{color:var(--ink2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:10px 18px;font-weight:800;cursor:pointer;background:var(--btn-bg);color:var(--btn-ink);min-height:42px}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn.small{padding:7px 14px;min-height:36px;font-size:.88rem}
+.btn:disabled{opacity:.5;cursor:default}
+
+.login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1.5px solid var(--line);border-radius:22px;padding:24px}
+.login h1{color:var(--green);margin-bottom:6px}
+.field{display:grid;gap:4px;margin:12px 0}
+.field label{font-weight:700;font-size:.88rem}
+input,select,textarea{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:9px 11px;min-height:42px}
+textarea{min-height:64px;resize:vertical}
+.msg{min-height:1.3em;font-weight:700;font-size:.9rem;color:var(--err)}
+
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+.tabs button{flex:none;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 18px;font-weight:800;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--btn-bg);color:var(--btn-ink);border-color:transparent}
+
+.bar{display:grid;gap:10px;grid-template-columns:1fr 1fr;margin-bottom:12px}
+@media(min-width:760px){.bar{grid-template-columns:1.2fr 1.4fr 1fr 1fr auto;align-items:end}}
+.bar .field{margin:0}
+.count{color:var(--ink2);font-size:.9rem;margin:2px 0 10px}
+
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.card .row1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.code{font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:1.1rem}
+.badge{display:inline-block;border-radius:999px;padding:3px 12px;font-size:.8rem;font-weight:800;background:var(--surface2)}
+.b-nueva{background:var(--warn-bg)} .b-fecha_confirmada,.b-abonada{background:var(--ok-bg);color:var(--green2)}
+.b-entregada{background:var(--ok-bg)} .b-devuelta{background:var(--surface2)} .b-cancelada{background:var(--pink-soft);color:var(--err)}
+.meta{color:var(--ink2);font-size:.92rem;margin:4px 0}
+.meta b{color:var(--ink)}
+.tot{font-family:"Fraunces",Georgia,serif;font-size:1.3rem;font-weight:800;color:var(--green)}
+details{margin:8px 0}
+summary{cursor:pointer;font-weight:700;color:var(--green2)}
+details ul{margin:6px 0 0;padding-left:20px;font-size:.9rem;color:var(--ink2)}
+.ctrl{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-top:10px}
+.ctrl .full{grid-column:1/-1}
+.ctrl .acts{display:flex;gap:8px;flex-wrap:wrap}
+.ok{color:var(--green2);font-weight:800}
+
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calhead h2{font-size:1.3rem;text-transform:capitalize}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:.75rem;font-weight:800;color:var(--ink2);text-align:center;padding:2px 0}
+.day{min-height:64px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:4px 5px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.day.out{opacity:.4}
+.day.sel{border-color:var(--green2);box-shadow:0 0 0 2px var(--green2)}
+.day.hoy .n{background:var(--pink);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+.day .n{font-weight:800;font-size:.85rem}
+.pill{font-size:.7rem;font-weight:800;border-radius:999px;padding:1px 7px}
+.pill.g{background:var(--ok-bg);color:var(--green2)} .pill.y{background:var(--warn-bg)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;color:var(--ink2);margin:8px 0}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-top:14px}
+.use{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;margin:8px 0;font-size:.92rem}
+.meter{grid-column:1/-1;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green2)}
+.meter i.over{background:var(--err)}
+.over-t{color:var(--err);font-weight:800}
+
+.inv{display:grid;grid-template-columns:1fr 90px auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.inv .nm{font-weight:700}
+.inv .chk{display:flex;align-items:center;gap:6px;font-size:.85rem}
+.inv .chk input{width:20px;height:20px;min-height:0}
+
+.npg{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.npg .full{grid-column:1/-1}
+.npg .field{margin:0}
+.chkline{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.chkline input{width:20px;height:20px;min-height:0}
+.prev{width:84px;height:84px;border-radius:12px;object-fit:cover;border:1.5px solid var(--line)}
+.inv2{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:12px;margin:10px 0;display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.inv2 .exh{grid-column:1/-1;display:flex;gap:10px;align-items:center}
+.inv2 .exh img,.inv2 .exh .nofoto{width:48px;height:48px;border-radius:10px;object-fit:cover;background:var(--surface2);flex:none}
+.inv2 label{display:grid;gap:3px;font-size:.82rem;font-weight:700}
+.inv2 .chk{display:flex;align-items:center;gap:6px}
+.inv2 .chk input{width:20px;height:20px;min-height:0}
+.inv2 .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+h3.sec{margin:20px 0 6px;font-size:1.2rem}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--green);color:var(--btn-ink);padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;max-width:92vw;text-align:center}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section id="login" class="login" hidden>
+    <h1>Panel de reservas</h1>
+    <p class="meta">Arboleda Fest. Entra con el correo y la contraseña que creaste en Supabase.</p>
+    <form id="loginForm">
+      <div class="field"><label for="em">Correo</label><input id="em" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <p class="msg" id="loginMsg" role="alert"></p>
+      <button class="btn" type="submit" id="loginBtn" style="width:100%">Entrar</button>
+    </form>
+  </section>
+
+  <section id="noconf" class="login" hidden>
+    <h1>Falta la configuración</h1>
+    <p class="meta">Abre el archivo <b>config.js</b> y escribe la dirección y la clave pública de tu proyecto de Supabase. Los pasos están en el README.</p>
+  </section>
+
+  <section id="app" hidden>
+    <div class="top">
+      <div><h1>Panel de reservas</h1><small id="who"></small></div>
+      <button class="btn ghost small" id="logout" type="button">Salir</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="cot">Cotizaciones</button>
+      <button role="tab" aria-selected="false" data-tab="cal">Calendario</button>
+      <button role="tab" aria-selected="false" data-tab="inv">Inventario</button>
+    </div>
+
+    <div id="tab-cot">
+      <div class="bar">
+        <div class="field"><label for="f-estado">Estado</label>
+          <select id="f-estado"><option value="">Todos</option></select></div>
+        <div class="field"><label for="f-q">Buscar (código, nombre o Instagram)</label><input id="f-q" type="search" placeholder="AF-2610… o @usuario"></div>
+        <div class="field"><label for="f-desde">Evento desde</label><input id="f-desde" type="date"></div>
+        <div class="field"><label for="f-orden">Orden</label>
+          <select id="f-orden"><option value="fecha">Fecha del evento</option><option value="recientes">Más recientes</option></select></div>
+        <button class="btn" id="f-go" type="button">Buscar</button>
+      </div>
+      <p class="count" id="cot-count"></p>
+      <div id="cot-list"></div>
+    </div>
+
+    <div id="tab-cal" hidden>
+      <div class="calhead">
+        <button class="btn ghost small" id="cal-prev" type="button" aria-label="Mes anterior">←</button>
+        <h2 id="cal-title"></h2>
+        <button class="btn ghost small" id="cal-next" type="button" aria-label="Mes siguiente">→</button>
+      </div>
+      <div class="legend"><span><span class="pill g">2</span> fechas confirmadas</span><span><span class="pill y">1</span> cotizaciones nuevas</span></div>
+      <div class="cal" id="cal-grid"></div>
+      <div class="panel" id="cal-detail" hidden></div>
+    </div>
+
+    <div id="tab-inv" hidden>
+      <p class="meta">Cuántas unidades tienes de cada pieza. Con esto la página avisa cuando una fecha ya no tiene piezas libres.</p>
+      <div id="inv-list"></div>
+
+      <h3 class="sec">Piezas nuevas</h3>
+      <div class="panel" style="margin-top:6px">
+        <h3>Agregar una pieza al cotizador</h3>
+        <p class="meta">Aparece en el cotizador al momento, sin tocar el código. Los combos no cambian.</p>
+        <form id="npForm" autocomplete="off" class="npg">
+          <div class="field full"><label for="np-nombre">Nombre</label><input id="np-nombre" maxlength="60" required placeholder="Ej.: Arco cuadrado dorado"></div>
+          <div class="field full"><label for="np-desc">Descripción corta (medidas, material)</label><input id="np-desc" maxlength="120" placeholder="Ej.: Dorado, 2 × 1.5 m, con bases"></div>
+          <div class="field"><label for="np-precio">Precio de alquiler ($)</label><input id="np-precio" type="number" min="0" max="500" step="0.5" required></div>
+          <div class="field"><label for="np-unid">Unidades que tienes</label><input id="np-unid" type="number" min="0" max="999" step="1" value="1" required></div>
+          <div class="field full"><label for="np-cat">Dónde aparece en el cotizador</label><select id="np-cat"></select></div>
+          <div class="field full"><label for="np-foto">Foto (opcional)</label><input id="np-foto" type="file" accept="image/*"><img id="np-prev" class="prev" alt="Vista previa" hidden></div>
+          <label class="chkline full"><input id="np-cuenta" type="checkbox" checked> Cuenta para los descuentos por cantidad (desmárcalo para cosas como las sillas)</label>
+          <p class="msg full" id="np-msg" role="alert"></p>
+          <div class="full"><button class="btn" id="np-go" type="submit">Agregar al cotizador</button></div>
+        </form>
+      </div>
+      <div id="extra-list"></div>
+
+      <div class="panel">
+        <h3>Entrega y devolución</h3>
+        <p class="meta">Cuántos días antes del evento se entrega y cuántos días después se devuelve. Las piezas quedan ocupadas todo ese tiempo.</p>
+        <div class="ctrl">
+          <div class="field"><label for="c-antes">Días antes</label><input id="c-antes" type="number" min="0" max="7"></div>
+          <div class="field"><label for="c-desp">Días después</label><input id="c-desp" type="number" min="0" max="7"></div>
+          <div class="full acts"><button class="btn small" id="c-save" type="button">Guardar</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="pdf.js"></script>
+<script>
+(function(){
+"use strict";
+var AF = window.AF_CONFIG || {};
+var URLB = String(AF.supabaseUrl || "").replace(/\/$/, ""), KEY = AF.supabaseKey || "";
+var SKEY = "af-admin-session";
+var ESTADOS = [["nueva","Nueva"],["fecha_confirmada","Fecha confirmada"],["abonada","Abono recibido"],["entregada","Entregada"],["devuelta","Devuelta"],["cancelada","Cancelada"]];
+var NOMBRE = {}; ESTADOS.forEach(function(e){ NOMBRE[e[0]]=e[1]; });
+var BLOQUEA = {fecha_confirmada:1, abonada:1, entregada:1};
+var sess = null, inv = [], cfg = {antes:1, desp:1}, cotMap = {};
+var calY, calM, calSel = null, calData = [];
+
+function $(s, r){ return (r||document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function money(n){ var c=Math.round(Number(n||0)*100); return "$"+(c%100===0 ? String(c/100) : (c/100).toFixed(2)); }
+function fdate(d, long){ return new Date(d+"T12:00:00").toLocaleDateString("es-PA", long?{weekday:"long",day:"numeric",month:"long",year:"numeric"}:{weekday:"short",day:"numeric",month:"short"}); }
+function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+var tt; function toast(m){ var t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){ t.classList.remove("show"); },2400); }
+
+/* ---------- sesión y API ---------- */
+function setSess(j){
+  sess = { access_token:j.access_token, refresh_token:j.refresh_token, email:(j.user&&j.user.email)||(sess&&sess.email)||"" };
+  try{ localStorage.setItem(SKEY, JSON.stringify(sess)); }catch(e){}
+}
+function headers(extra){
+  var h = {"apikey":KEY, "Content-Type":"application/json"};
+  if(sess) h.Authorization = "Bearer "+sess.access_token;
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
+function refresh(){
+  if(!sess || !sess.refresh_token) return Promise.resolve(false);
+  return fetch(URLB+"/auth/v1/token?grant_type=refresh_token", {method:"POST", headers:{"apikey":KEY,"Content-Type":"application/json"}, body:JSON.stringify({refresh_token:sess.refresh_token})})
+    .then(function(r){ if(!r.ok) return false; return r.json().then(function(j){ setSess(j); return true; }); })
+    .catch(function(){ return false; });
+}
+function api(path, opt){
+  opt = opt || {}; var tried = false;
+  function go(){
+    return fetch(URLB+"/rest/v1/"+path, {method:opt.method||"GET", headers:headers(opt.headers), body:opt.body?JSON.stringify(opt.body):undefined})
+      .then(function(r){
+        if(r.status===401 && !tried){
+          tried = true;
+          return refresh().then(function(ok){ if(ok) return go(); logout(); throw new Error("Tu sesión venció. Entra de nuevo."); });
+        }
+        return r.text().then(function(txt){
+          var j = null; try{ j = txt ? JSON.parse(txt) : null; }catch(e){}
+          if(!r.ok) throw new Error((j && j.message) || ("Error "+r.status));
+          return j;
+        });
+      });
+  }
+  return go();
+}
+function login(email, pw){
+  return fetch(URLB+"/auth/v1/token?grant_type=password", {method:"POST", headers:{"apikey":KEY,"Content-Type":"application/json"}, body:JSON.stringify({email:email,password:pw})})
+    .then(function(r){ return r.json().then(function(j){
+      if(!r.ok) throw new Error(j.error_description || j.msg || "No se pudo iniciar sesión. Revisa el correo y la contraseña.");
+      setSess(j);
+    }); })
+    .then(function(){ return api("admins?select=user_id"); })
+    .then(function(a){
+      if(!a || !a.length){ logout(true); throw new Error("Este usuario no es administrador. Ejecuta el último paso del archivo setup.sql."); }
+      showApp();
+    });
+}
+function logout(silent){
+  sess = null; try{ localStorage.removeItem(SKEY); }catch(e){}
+  $("#app").hidden = true; $("#login").hidden = false; if(!silent) $("#loginMsg").textContent = "";
+}
+
+/* ---------- arranque ---------- */
+function start(){
+  if(!URLB || !KEY){ $("#noconf").hidden = false; return; }
+  ESTADOS.forEach(function(e){ var o=document.createElement("option"); o.value=e[0]; o.textContent=e[1]; $("#f-estado").appendChild(o); });
+  var d = new Date(); d.setDate(d.getDate()-1); $("#f-desde").value = iso(d);
+  calY = new Date().getFullYear(); calM = new Date().getMonth();
+  try{ var raw = localStorage.getItem(SKEY); if(raw) sess = JSON.parse(raw); }catch(e){}
+  if(sess){
+    api("admins?select=user_id").then(function(a){ if(a && a.length) showApp(); else logout(true); }).catch(function(){ $("#login").hidden=false; });
+  }else{ $("#login").hidden = false; }
+}
+function showApp(){
+  $("#login").hidden = true; $("#app").hidden = false; $("#who").textContent = sess && sess.email || "";
+  loadInv().then(function(){ return loadCot(); }).catch(function(e){ toast(e.message); });
+}
+
+/* ---------- pestañas ---------- */
+$$(".tabs button").forEach(function(b){
+  b.addEventListener("click", function(){
+    $$(".tabs button").forEach(function(x){ x.setAttribute("aria-selected", x===b ? "true":"false"); });
+    ["cot","cal","inv"].forEach(function(t){ $("#tab-"+t).hidden = (t!==b.getAttribute("data-tab")); });
+    var t = b.getAttribute("data-tab");
+    if(t==="cal") loadCal(); if(t==="inv") renderInv(); if(t==="cot") loadCot();
+  });
+});
+
+/* ---------- cotizaciones ---------- */
+function loadCot(){
+  var q = "cotizaciones?select=*,cotizacion_items(item_id,cantidad)&limit=300";
+  var est = $("#f-estado").value, txt = $("#f-q").value.trim().replace(/[,()*%\\]/g,""), desde = $("#f-desde").value;
+  if(est) q += "&estado=eq."+est;
+  if(desde) q += "&fecha_evento=gte."+desde;
+  if(txt) q += "&or=("+["codigo","nombre","instagram"].map(function(c){ return c+".ilike.*"+encodeURIComponent(txt.replace(/^@/,""))+"*"; }).join(",")+")";
+  q += $("#f-orden").value==="recientes" ? "&order=creada.desc" : "&order=fecha_evento.asc,creada.asc";
+  return api(q).then(function(rows){
+    $("#cot-count").textContent = rows.length + (rows.length===1 ? " cotización" : " cotizaciones");
+    var box = $("#cot-list"); box.innerHTML = "";
+    if(!rows.length){ box.innerHTML = '<div class="card meta">No hay cotizaciones con ese filtro.</div>'; return; }
+    rows.forEach(function(c){ cotMap[c.id] = c; box.appendChild(card(c)); });
+  }).catch(function(e){ toast(e.message); });
+}
+function pdfDeCot(c){
+  var lineas = (c.detalle && c.detalle.length) ? c.detalle.map(AFPDF.parseLinea)
+    : (c.cotizacion_items||[]).map(function(i){ return {cant:String(i.cantidad), desc:invName(i.item_id), precio:""}; });
+  return {codigo:c.codigo, emitida:new Date(c.creada), cliente:{nombre:c.nombre, instagram:c.instagram},
+    evento:{fecha:c.fecha_evento, tipo:c.tipo_evento}, entrega:{tipo:c.entrega, zona:c.zona}, lineas:lineas,
+    resumen:[], total:Number(c.total), abono:Number(c.abono||0), estado:c.estado, notas:c.notas, deposito:10};
+}
+function invName(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f ? f.nombre : id; }
+function card(c){
+  var el = document.createElement("article"); el.className = "card"; el.setAttribute("data-id", c.id);
+  var items = (c.cotizacion_items||[]).map(function(i){ return "<li>"+esc(i.cantidad)+" × "+esc(invName(i.item_id))+"</li>"; }).join("");
+  var det = (c.detalle||[]).map(function(l){ return "<li>"+esc(l)+"</li>"; }).join("");
+  var opts = ESTADOS.map(function(e){ return '<option value="'+e[0]+'"'+(e[0]===c.estado?" selected":"")+'>'+e[1]+'</option>'; }).join("");
+  el.innerHTML =
+    '<div class="row1"><div><span class="code">'+esc(c.codigo)+'</span> <span class="badge b-'+esc(c.estado)+'">'+esc(NOMBRE[c.estado]||c.estado)+'</span></div><div class="tot">'+money(c.total)+'</div></div>'+
+    '<p class="meta"><b>'+esc(c.nombre)+'</b> · @'+esc(c.instagram)+'</p>'+
+    '<p class="meta"><b>'+esc(fdate(c.fecha_evento,true))+'</b> · '+esc(c.tipo_evento||"Evento")+'</p>'+
+    '<p class="meta">'+(c.entrega==="delivery" ? "Delivery: "+esc(c.zona||"sin dirección") : "Retiro en el local")+'</p>'+
+    (c.notas ? '<p class="meta">Notas del cliente: '+esc(c.notas)+'</p>' : '')+
+    (c.ref ? '<p class="meta">Origen: '+esc(c.ref)+'</p>' : '')+
+    '<details><summary>Ver piezas y detalle</summary><ul>'+(det||items)+'</ul>'+(det&&items?'<p class="meta">Piezas que ocupan inventario:</p><ul>'+items+'</ul>':'')+'</details>'+
+    '<div class="ctrl">'+
+      '<div class="field"><label>Estado</label><select data-f="estado">'+opts+'</select></div>'+
+      '<div class="field"><label>Abono recibido ($)</label><input data-f="abono" type="number" min="0" step="0.5" value="'+esc(c.abono||0)+'"></div>'+
+      '<div class="field full"><label>Notas internas</label><textarea data-f="notas_internas" placeholder="Pago por Yappy, hora de entrega…">'+esc(c.notas_internas||"")+'</textarea></div>'+
+      '<div class="full acts"><button class="btn small" data-a="save" type="button">Guardar</button>'+
+      (c.estado==="nueva" ? '<button class="btn ghost small" data-a="libre" type="button">Fecha libre, confirmar</button>' : '')+
+      (c.estado==="fecha_confirmada" ? '<button class="btn ghost small" data-a="abono" type="button">Abono recibido</button>' : '')+
+      '<button class="btn ghost small" data-a="pdf" type="button">Descargar PDF</button>'+
+      '<button class="btn ghost small" data-a="copiar" type="button">Copiar código</button>'+
+      '<button class="btn ghost small" data-a="eliminar" type="button">Eliminar</button><span class="ok" data-ok></span></div>'+
+    '</div>';
+  return el;
+}
+$("#cot-list").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-a]"); if(!b) return;
+  var el = b.closest(".card"), id = el.getAttribute("data-id"), a = b.getAttribute("data-a");
+  var code = $(".code", el).textContent;
+  if(a==="copiar"){ try{ navigator.clipboard.writeText(code); toast("Código copiado: "+code); }catch(x){ toast(code); } return; }
+  if(a==="pdf"){
+    var cq = cotMap[id];
+    if(!window.AFPDF || !(window.jspdf && window.jspdf.jsPDF)){ toast("No se cargó la librería de PDF"); return; }
+    try{ AFPDF.entregar(pdfDeCot(cq), {compartir:false}).then(function(){ toast("PDF generado"); }); }catch(x){ toast("No se pudo generar el PDF"); }
+    return;
+  }
+  if(a==="eliminar"){
+    if(!window.confirm("¿Eliminar la cotización "+code+"? No se puede deshacer.")) return;
+    api("cotizaciones?id=eq."+id, {method:"DELETE", headers:{"Prefer":"return=representation"}}).then(function(r){
+      if(!r || !r.length) throw new Error("No se eliminó. ¿Tu usuario es administrador?");
+      toast("Cotización eliminada"); return loadCot();
+    }).catch(function(x){ toast(x.message); });
+    return;
+  }
+  var estado = $('[data-f="estado"]', el).value;
+  var abono = Number($('[data-f="abono"]', el).value || 0);
+  var notas = $('[data-f="notas_internas"]', el).value;
+  function patch(body){
+    return api("cotizaciones?id=eq."+id, {method:"PATCH", body:body, headers:{"Prefer":"return=representation"}}).then(function(r){
+      if(!r || !r.length) throw new Error("No se guardó. ¿Tu usuario es administrador?");
+      toast("Guardado"); return loadCot();
+    }).catch(function(x){ toast(x.message); });
+  }
+  if(a==="save"){ return patch({estado:estado, abono:abono, notas_internas:notas}); }
+  if(a==="abono"){ return patch({estado:"abonada", abono:abono>0?abono:10, notas_internas:notas}); }
+  if(a==="libre"){
+    api("cotizaciones?id=eq."+id+"&select=fecha_evento,cotizacion_items(item_id,cantidad)").then(function(r){
+      var q = r[0], items = {}; q.cotizacion_items.forEach(function(i){ items[i.item_id]=i.cantidad; });
+      return api("rpc/disponibilidad", {method:"POST", body:{p_fecha:q.fecha_evento, p_items:items}}).then(function(d){
+        if(d && !d.ok){
+          var bad = d.items.filter(function(x){ return !x.ok; }).map(function(x){ return x.nombre+" (libres: "+x.libres+")"; }).join(", ");
+          if(!window.confirm("Hay conflicto de piezas para esa fecha: "+bad+".\n¿Confirmar de todos modos?")) return;
+        }
+        return patch({estado:"fecha_confirmada", abono:abono, notas_internas:notas});
+      });
+    }).catch(function(x){ toast(x.message); });
+  }
+});
+$("#f-go").addEventListener("click", loadCot);
+$("#f-q").addEventListener("keydown", function(e){ if(e.key==="Enter") loadCot(); });
+["f-estado","f-desde","f-orden"].forEach(function(id){ $("#"+id).addEventListener("change", loadCot); });
+
+/* ---------- calendario ---------- */
+function windowOverlap(evA, evB){  // ¿se cruzan las ventanas de entrega y devolución de dos fechas?
+  var a = new Date(evA+"T12:00:00"), b = new Date(evB+"T12:00:00"), day = 86400000;
+  var a0 = a - cfg.antes*day, a1 = +a + cfg.desp*day, b0 = b - cfg.antes*day, b1 = +b + cfg.desp*day;
+  return a0 <= b1 && b0 <= a1;
+}
+function loadCal(){
+  var first = new Date(calY, calM, 1), last = new Date(calY, calM+1, 0);
+  var from = new Date(first); from.setDate(from.getDate()-8); var to = new Date(last); to.setDate(to.getDate()+8);
+  $("#cal-title").textContent = first.toLocaleDateString("es-PA",{month:"long",year:"numeric"});
+  return api("cotizaciones?select=id,codigo,nombre,instagram,estado,total,fecha_evento,entrega,cotizacion_items(item_id,cantidad)&estado=neq.cancelada&fecha_evento=gte."+iso(from)+"&fecha_evento=lte."+iso(to)+"&limit=500")
+    .then(function(rows){ calData = rows; drawCal(); if(calSel) showDay(calSel); })
+    .catch(function(e){ toast(e.message); });
+}
+function drawCal(){
+  var g = $("#cal-grid"); g.innerHTML = "";
+  ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(function(d){ var x=document.createElement("div"); x.className="dow"; x.textContent=d; g.appendChild(x); });
+  var first = new Date(calY, calM, 1), offset = (first.getDay()+6)%7, start = new Date(first); start.setDate(1-offset);
+  var hoy = iso(new Date());
+  for(var i=0;i<42;i++){
+    var d = new Date(start); d.setDate(start.getDate()+i); var k = iso(d);
+    var del = calData.filter(function(c){ return c.fecha_evento===k; });
+    var conf = del.filter(function(c){ return BLOQUEA[c.estado]; }).length, nue = del.filter(function(c){ return c.estado==="nueva"; }).length;
+    var b = document.createElement("button"); b.type="button"; b.setAttribute("data-d", k);
+    b.className = "day"+(d.getMonth()!==calM?" out":"")+(k===hoy?" hoy":"")+(k===calSel?" sel":"");
+    b.innerHTML = '<span class="n">'+d.getDate()+'</span>'+(conf?'<span class="pill g">'+conf+'</span>':'')+(nue?'<span class="pill y">'+nue+'</span>':'');
+    b.setAttribute("aria-label", fdate(k,true)+(conf?", "+conf+" confirmadas":"")+(nue?", "+nue+" nuevas":""));
+    g.appendChild(b);
+  }
+}
+$("#cal-grid").addEventListener("click", function(e){ var b = e.target.closest(".day"); if(!b) return; calSel = b.getAttribute("data-d"); drawCal(); showDay(calSel); });
+$("#cal-prev").addEventListener("click", function(){ calM--; if(calM<0){ calM=11; calY--; } calSel=null; $("#cal-detail").hidden=true; loadCal(); });
+$("#cal-next").addEventListener("click", function(){ calM++; if(calM>11){ calM=0; calY++; } calSel=null; $("#cal-detail").hidden=true; loadCal(); });
+function showDay(k){
+  var box = $("#cal-detail"); box.hidden = false;
+  var del = calData.filter(function(c){ return c.fecha_evento===k; });
+  var h = '<h3>'+esc(fdate(k,true))+'</h3>';
+  h += del.length ? del.map(function(c){
+    return '<p class="meta"><span class="code">'+esc(c.codigo)+'</span> <span class="badge b-'+esc(c.estado)+'">'+esc(NOMBRE[c.estado]||c.estado)+'</span> · <b>'+esc(c.nombre)+'</b> @'+esc(c.instagram)+' · '+money(c.total)+' · '+(c.entrega==="delivery"?"delivery":"retiro")+'</p>';
+  }).join("") : '<p class="meta">Sin eventos este día.</p>';
+  var used = {};
+  calData.forEach(function(c){ if(BLOQUEA[c.estado] && windowOverlap(c.fecha_evento,k)) c.cotizacion_items.forEach(function(i){ used[i.item_id]=(used[i.item_id]||0)+i.cantidad; }); });
+  var ids = Object.keys(used);
+  h += '<h3 style="margin-top:14px">Piezas comprometidas ese día</h3><p class="meta">Cuenta eventos confirmados con entrega '+cfg.antes+' día(s) antes y devolución '+cfg.desp+' día(s) después.</p>';
+  if(!ids.length) h += '<p class="meta">Todo el inventario está libre.</p>';
+  ids.forEach(function(id){
+    var it = inv.filter(function(x){ return x.item_id===id; })[0], tot = it ? it.unidades : 0, u = used[id], over = u>tot;
+    h += '<div class="use"><span>'+esc(invName(id))+'</span><span class="'+(over?'over-t':'')+'">'+u+' de '+tot+(over?' · faltan '+(u-tot):'')+'</span><div class="meter"><i class="'+(over?'over':'')+'" style="width:'+Math.min(100, tot?Math.round(u/tot*100):100)+'%"></i></div></div>';
+  });
+  box.innerHTML = h;
+}
+
+/* ---------- inventario y reglas ---------- */
+function loadInv(){
+  return api("inventario?select=*&order=nombre.asc").then(function(r){ inv = r; return api("config?select=*"); })
+    .then(function(c){ c.forEach(function(x){ if(x.clave==="dias_antes") cfg.antes=Number(x.valor); if(x.clave==="dias_despues") cfg.desp=Number(x.valor); }); $("#c-antes").value=cfg.antes; $("#c-desp").value=cfg.desp; });
+}
+var CATEGORIAS = [["arcos","Arcos y aros"],["bases","Bases, mesitas y escaleras"],["mesas","Mesas y sillas"],["luces","Letreros LED"],["extras","Accesorios"]];
+function catNombre(id){ var f = CATEGORIAS.filter(function(c){ return c[0]===id; })[0]; return f ? f[1] : id; }
+function renderInv(){
+  var box = $("#inv-list"); box.innerHTML = "";
+  inv.filter(function(i){ return i.precio==null; }).forEach(function(i){
+    var row = document.createElement("div"); row.className = "inv"; row.setAttribute("data-id", i.item_id);
+    row.innerHTML = '<span class="nm">'+esc(i.nombre)+'</span><input type="number" min="0" max="999" value="'+esc(i.unidades)+'" aria-label="Unidades de '+esc(i.nombre)+'">'+
+      '<label class="chk"><input type="checkbox"'+(i.activo?" checked":"")+'> activa</label><button class="btn small" type="button">Guardar</button>';
+    box.appendChild(row);
+  });
+  var ex = $("#extra-list"); ex.innerHTML = "";
+  var extras = inv.filter(function(i){ return i.precio!=null; });
+  if(!extras.length){ ex.innerHTML = '<p class="meta">Todavía no has agregado piezas nuevas.</p>'; }
+  extras.forEach(function(i){
+    var row = document.createElement("div"); row.className = "inv2"; row.setAttribute("data-id", i.item_id);
+    var foto = (i.foto && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(i.foto)) ? '<img src="'+i.foto+'" alt="">' : '<span class="nofoto"></span>';
+    row.innerHTML = '<div class="exh">'+foto+'<div><b>'+esc(i.nombre)+'</b><br><small class="meta">'+esc(catNombre(i.categoria))+(i.descripcion?" · "+esc(i.descripcion):"")+'</small></div></div>'+
+      '<label>Precio ($)<input data-k="precio" type="number" min="0" max="500" step="0.5" value="'+esc(i.precio)+'"></label>'+
+      '<label>Unidades<input data-k="unidades" type="number" min="0" max="999" value="'+esc(i.unidades)+'"></label>'+
+      '<label class="chk"><input data-k="activo" type="checkbox"'+(i.activo?" checked":"")+'> visible en el cotizador</label>'+
+      '<div class="acts"><button class="btn small" data-x="guardar" type="button">Guardar</button><button class="btn ghost small" data-x="borrar" type="button">Eliminar</button></div>';
+    ex.appendChild(row);
+  });
+}
+$("#inv-list").addEventListener("click", function(e){
+  var b = e.target.closest("button"); if(!b) return;
+  var row = b.closest(".inv"), id = row.getAttribute("data-id");
+  var u = parseInt($('input[type="number"]', row).value, 10), act = $('input[type="checkbox"]', row).checked;
+  if(isNaN(u) || u<0){ toast("Escribe un número válido"); return; }
+  api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{unidades:u, activo:act}, headers:{"Prefer":"return=representation"}})
+    .then(function(r){ if(!r||!r.length) throw new Error("No se guardó"); inv.forEach(function(i){ if(i.item_id===id){ i.unidades=u; i.activo=act; } }); toast("Inventario guardado"); })
+    .catch(function(x){ toast(x.message); });
+});
+$("#c-save").addEventListener("click", function(){
+  var a = parseInt($("#c-antes").value,10), d = parseInt($("#c-desp").value,10);
+  if(isNaN(a)||isNaN(d)||a<0||d<0||a>7||d>7){ toast("Usa números de 0 a 7"); return; }
+  Promise.all([
+    api("config?clave=eq.dias_antes", {method:"PATCH", body:{valor:String(a)}, headers:{"Prefer":"return=representation"}}),
+    api("config?clave=eq.dias_despues", {method:"PATCH", body:{valor:String(d)}, headers:{"Prefer":"return=representation"}})
+  ]).then(function(){ cfg.antes=a; cfg.desp=d; toast("Reglas guardadas"); }).catch(function(x){ toast(x.message); });
+});
+
+/* ---------- piezas nuevas ---------- */
+function limpio(t){ return String(t||"").replace(/[<>"&]/g,"").replace(/\s+/g," ").trim(); }
+function slugDe(n){
+  var b = limpio(n).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,28);
+  if(b.length<2) b = "pieza-"+Math.random().toString(36).slice(2,6);
+  var id = b, k = 2;
+  while(inv.some(function(i){ return i.item_id===id; })) id = b+"-"+(k++);
+  return id;
+}
+function leerFoto(file){
+  return new Promise(function(res, rej){
+    var fr = new FileReader();
+    fr.onerror = function(){ rej(new Error("No se pudo leer la foto")); };
+    fr.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ rej(new Error("Ese archivo no parece una imagen válida")); };
+      img.onload = function(){
+        var max = 640, k = Math.min(1, max/Math.max(img.width, img.height));
+        var c = document.createElement("canvas"); c.width = Math.max(1,Math.round(img.width*k)); c.height = Math.max(1,Math.round(img.height*k));
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+        var q = 0.74, out = c.toDataURL("image/jpeg", q);
+        while(out.length > 180000 && q > 0.3){ q -= 0.1; out = c.toDataURL("image/jpeg", q); }
+        if(out.length > 240000){ rej(new Error("La foto es muy pesada. Usa una más pequeña.")); return; }
+        res(out);
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+CATEGORIAS.forEach(function(c){ var o=document.createElement("option"); o.value=c[0]; o.textContent=c[1]; $("#np-cat").appendChild(o); });
+$("#np-foto").addEventListener("change", function(){
+  var f = this.files[0], pv = $("#np-prev");
+  if(!f){ pv.hidden = true; return; }
+  leerFoto(f).then(function(u){ pv.src = u; pv.hidden = false; $("#np-msg").textContent = ""; }).catch(function(e){ pv.hidden = true; $("#np-msg").textContent = e.message; });
+});
+$("#npForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var msg = $("#np-msg"), btn = $("#np-go"); msg.textContent = "";
+  var nombre = limpio($("#np-nombre").value), desc = limpio($("#np-desc").value);
+  var precio = Number($("#np-precio").value), unid = parseInt($("#np-unid").value, 10), cat = $("#np-cat").value;
+  if(nombre.length < 2){ msg.textContent = "Escribe el nombre de la pieza."; return; }
+  if(isNaN(precio) || precio < 0 || precio > 500){ msg.textContent = "El precio debe estar entre 0 y 500."; return; }
+  if(isNaN(unid) || unid < 0 || unid > 999){ msg.textContent = "Las unidades deben estar entre 0 y 999."; return; }
+  btn.disabled = true;
+  var file = $("#np-foto").files[0];
+  (file ? leerFoto(file) : Promise.resolve(null)).then(function(foto){
+    var body = {item_id:slugDe(nombre), nombre:nombre, descripcion:desc, precio:precio, unidades:unid, categoria:cat, cuenta_descuento:$("#np-cuenta").checked, activo:true, foto:foto};
+    return api("inventario", {method:"POST", body:body, headers:{"Prefer":"return=representation"}});
+  }).then(function(r){
+    if(!r || !r.length) throw new Error("No se guardó. ¿Corriste el archivo 02-piezas-nuevas-y-pdf.sql en Supabase?");
+    inv.push(r[0]); $("#npForm").reset(); $("#np-prev").hidden = true; renderInv(); toast("Pieza agregada. Ya aparece en el cotizador.");
+  }).catch(function(x){ msg.textContent = x.message; }).then(function(){ btn.disabled = false; });
+});
+$("#extra-list").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-x]"); if(!b) return;
+  var row = b.closest(".inv2"), id = row.getAttribute("data-id"), x = b.getAttribute("data-x");
+  if(x==="guardar"){
+    var precio = Number($('[data-k="precio"]', row).value), u = parseInt($('[data-k="unidades"]', row).value, 10), act = $('[data-k="activo"]', row).checked;
+    if(isNaN(precio) || precio<0 || precio>500 || isNaN(u) || u<0){ toast("Revisa el precio y las unidades"); return; }
+    api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{precio:precio, unidades:u, activo:act}, headers:{"Prefer":"return=representation"}})
+      .then(function(r){ if(!r||!r.length) throw new Error("No se guardó"); inv.forEach(function(i){ if(i.item_id===id){ i.precio=precio; i.unidades=u; i.activo=act; } }); toast("Pieza guardada"); })
+      .catch(function(err){ toast(err.message); });
+  }
+  if(x==="borrar"){
+    if(!window.confirm("¿Eliminar esta pieza del cotizador?")) return;
+    api("inventario?item_id=eq."+encodeURIComponent(id), {method:"DELETE", headers:{"Prefer":"return=representation"}})
+      .then(function(r){ inv = inv.filter(function(i){ return i.item_id!==id; }); renderInv(); toast("Pieza eliminada"); })
+      .catch(function(err){
+        toast(/foreign key|violates/i.test(err.message) ? "Ya aparece en cotizaciones. Mejor desmarca 'visible en el cotizador'." : err.message);
+      });
+  }
+});
+
+/* ---------- eventos de acceso ---------- */
+$("#loginForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var btn = $("#loginBtn"), msg = $("#loginMsg"); msg.textContent = ""; btn.disabled = true;
+  login($("#em").value.trim(), $("#pw").value).catch(function(x){ msg.textContent = x.message; }).then(function(){ btn.disabled = false; $("#pw").value = ""; });
+});
+$("#logout").addEventListener("click", function(){ logout(); });
+
+start();
+})();
+</script>
+</body>
+</html>

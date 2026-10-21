@@ -109,3 +109,30 @@ Con un repositorio público, GitHub Pages es gratis. Con uno privado, depende de
    `index.html`, `admin.html` y `pdf.js` (reemplazan o agregan), la carpeta `vendor/` con sus dos archivos, y `supabase/02-piezas-nuevas-y-pdf.sql`.
 3. **No subas ni reemplaces `config.js`**: ya tiene tus datos.
 4. Espera 1 o 2 minutos y recarga las dos páginas con Ctrl + F5.
+
+---
+
+## Actualización 3: cambiar la foto de las piezas originales
+
+- En el panel, pestaña **Inventario**, cada pieza original tiene debajo una fila de foto. Elige una imagen y se guarda sola; para volver a la foto de siempre toca **Volver a la original**.
+- Las fotos se reducen en tu equipo antes de guardarse (unos 480 píxeles). Usa fotos con la pieza sola, buena luz y fondo liso.
+- El cotizador toma la foto nueva al cargarse; recarga la página para verla.
+- Los **precios** y los **combos** de las piezas originales siguen estando en `index.html`.
+- Para instalarla: corre una vez `supabase/03-fotos-piezas-originales.sql` en el SQL Editor de Supabase y sube `index.html` y `admin.html` a GitHub.
+
+---
+
+## Actualización 4: precios, combos nuevos y temporadas
+
+Todo se maneja desde el panel, en tres pestañas nuevas:
+
+- **Precios:** el precio de cada pieza, para cambiarlo cuando cambie la temporada. Las filas modificadas se marcan, y se guardan juntas con **Guardar todos los cambios**.
+- **Combos:** cambia el precio, las piezas, el nombre y la foto de cualquier combo, oculta los que no quieras mostrar y crea combos nuevos. Un combo solo aparece en el cotizador si su precio es menor o igual que la suma de sus piezas por separado (el panel te avisa).
+- **Temporadas:** un recargo o un descuento en porcentaje que se aplica al total según la **fecha del evento** que escribe el cliente (por ejemplo, +15 % en diciembre o -10 % en una oferta). Se ve como una línea aparte en la cotización, en el mensaje de WhatsApp y en el PDF. Si dos temporadas se cruzan, se usa la que empieza más tarde.
+
+Cosas a tener en cuenta:
+- Los cambios se ven al recargar el cotizador.
+- Si cambias el precio de una pieza, el "por separado" y el ahorro de los combos se recalculan solos. El precio del combo no cambia por sí mismo.
+- Las cotizaciones guardadas conservan el total con el que se hicieron.
+- Los flyers de Instagram no se actualizan solos: si cambias un precio que sale en un flyer, hay que cambiar el flyer.
+- Para instalarla: corre una vez `supabase/04-precios-combos-temporadas.sql` en el SQL Editor de Supabase y sube `index.html` y `admin.html` a GitHub. Este archivo ya incluye lo de la actualización 3.

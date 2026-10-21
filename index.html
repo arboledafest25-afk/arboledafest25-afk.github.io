@@ -105,6 +105,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .combo .ph{position:relative;aspect-ratio:4/3;background:var(--surface2)}
 .combo .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .combo .tag{position:absolute;left:10px;top:10px;background:var(--surface);color:var(--ink);font-family:"Fraunces",Georgia,serif;font-weight:800;border-radius:999px;padding:5px 14px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.combo .ph .noimg{width:100%;height:100%;display:grid;place-items:center;color:var(--gold)}
+.combo .ph .noimg svg{width:76px;height:76px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .combo .cb{padding:14px 14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
 .combo ul{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:.88rem;color:var(--ink2)}
 .combo ul li{display:flex;gap:8px;align-items:baseline}
@@ -873,6 +875,12 @@ var COMBOS = [
   { id:"c5", name:"Combo #5", price:30, img:"combo5", items:["arco-romano","cilindros","grama","bandejas"] },
   { id:"c6", name:"Combo #6", price:12, img:"combo6", items:["arco-romano","grama"] }
 ];
+var TEMPS = [];   /* temporadas (ajuste en % según la fecha del evento); se cargan desde la base de datos */
+function temporadaPara(f){
+  if(!f) return null; var best=null;
+  TEMPS.forEach(function(t){ if(t.desde<=f && f<=t.hasta && (!best || t.desde>=best.desde)) best=t; });
+  return best;
+}
 /* ====== FIN DE CONFIGURACIÓN ====== */
 
 /* Conexión con la base de datos (se llena en config.js) */
@@ -960,11 +968,20 @@ function quote(){
   var gifts = tier ? tier.gifts.map(function(id){return byId[id];}) : [];
   var giftValue = gifts.reduce(function(s,g){return s+g.price;},0);
   var hasAny = comboLines.length>0 || loose.length>0;
+  var base = comboTotal+looseSub-discount, temp = temporadaPara(state.form.date), tadj = temp ? Math.round(base*temp.pct)/100 : 0;
   return { comboLines:comboLines, comboTotal:comboTotal, comboSaved:comboSaved, loose:loose, looseSub:looseSub, pieces:loosePieces,
            tierIdx:tierIdx, tier:tier, discount:discount, gifts:gifts, giftValue:giftValue, indivTotal:indivTotal,
-           total:comboTotal+looseSub-discount, saved:comboSaved+discount+giftValue, next:CONFIG.tiers[tierIdx+1]||null, hasAny:hasAny };
+           total:base+tadj, temp:temp, tadj:tadj, saved:comboSaved+discount+giftValue, next:CONFIG.tiers[tierIdx+1]||null, hasAny:hasAny };
 }
-function comboContents(c){ return c.items.map(function(id){ return byId[id].name; }); }
+function comboContents(c){
+  var cnt={}, ord=[]; c.items.forEach(function(id){ if(!cnt[id]){ cnt[id]=0; ord.push(id); } cnt[id]++; });
+  return ord.map(function(id){ return (cnt[id]>1 ? cnt[id]+" × " : "")+byId[id].name; });
+}
+function comboImg(c){
+  var src = c.foto || (c.img && IMG[c.img]);
+  return src ? '<img src="'+src+'" alt="Montaje del '+c.name+'" loading="lazy">'
+             : '<div class="noimg"><svg viewBox="0 0 64 64" aria-hidden="true">'+ICONS.caja+'</svg></div>';
+}
 function nm(id){ return byId[id].name; }
 function comboDesc(l){ return l.matched.map(nm).join(", ")+(l.missing.length?" (sin: "+l.missing.map(nm).join(", ")+")":""); }
 
@@ -980,7 +997,7 @@ var combosHtml='<section class="cat" id="cat-combos"><h3>Combos listos</h3><p cl
 COMBOS.map(function(c){
   var indiv=c.items.reduce(function(s,id){return s+byId[id].price;},0);
   return '<article class="combo" data-combo="'+c.id+'">'+
-    '<div class="ph"><img src="'+IMG[c.img]+'" alt="Montaje del '+c.name+'" loading="lazy"><span class="tag">'+c.name+'</span></div>'+
+    '<div class="ph">'+comboImg(c)+'<span class="tag">'+c.name+'</span></div>'+
     '<div class="cb"><ul>'+comboContents(c).map(function(n){return '<li>'+n+'</li>';}).join("")+'</ul>'+
     '<div class="cp"><b>'+fmt(c.price)+'</b>'+(indiv>c.price?'<s>'+fmt(indiv)+' por separado</s><em>Ahorras '+fmt(indiv-c.price)+'</em>':'')+'</div>'+
     '<div class="row"><button type="button" class="btn small" data-add-combo="'+c.id+'">Elegir este combo</button><span class="inq" aria-live="polite"></span></div></div>'+
@@ -1085,6 +1102,8 @@ function update(fromClick){
     }
     if(q.comboSaved>0){ html+='<div class="row save"><span>Ahorro por combos listos</span><span>−'+fmt(q.comboSaved)+'</span></div>'; }
     if(q.discount>0){ html+='<div class="row save"><span>Descuento por piezas sueltas ('+q.tier.pct+' %)</span><span>−'+fmt(q.discount)+'</span></div>'; }
+    if(q.temp && q.tadj!==0){ html+='<div class="row'+(q.tadj<0?' save':'')+'"><span>'+q.temp.nombre+' ('+(q.temp.pct>0?'+':'−')+Math.abs(q.temp.pct)+' %)</span><span>'+(q.tadj<0?'−':'+')+fmt(Math.abs(q.tadj))+'</span></div>'; }
+    else if(!q.temp && TEMPS.length && !state.form.date){ html+='<p class="note">El precio final puede cambiar según la fecha de tu evento.</p>'; }
     if(q.giftValue>0){ html+='<div class="row save"><span>Regalos incluidos</span><span>'+fmt(q.giftValue)+' de valor</span></div>'; }
     html+='<div class="row big"><span>Total</span><span>'+fmt(q.total)+'</span></div>';
     if(state.delivery==="delivery"){ html+='<p class="note">Más el costo de delivery, según tu lugar.</p>'; }
@@ -1129,7 +1148,7 @@ $("#qform").addEventListener("input", function(e){
   else if(t.name==="type") f.type=t.value; else if(t.name==="zone") f.zone=t.value; else if(t.name==="notes") f.notes=t.value;
   else if(t.name==="client") f.client=t.checked; else if(t.name==="delivery"){ state.delivery=t.value; update(false); return; }
   $("#err").textContent=""; save();
-  if(t.name==="date") checkAvail();
+  if(t.name==="date") update(false);
 });
 $("#qform").addEventListener("submit", function(e){ e.preventDefault(); });
 
@@ -1159,6 +1178,7 @@ function detailLines(q){
   q.comboLines.forEach(function(l){ out.push(l.q+" × "+l.c.name+(l.missing.length?" ajustado":"")+" ("+comboDesc(l)+"): "+fmt(l.total)); });
   q.loose.forEach(function(l){ out.push(l.q+" × "+l.it.name+": "+fmt(l.it.price*l.q)); });
   q.gifts.forEach(function(g){ out.push("1 × "+g.name+": regalo"); });
+  if(q.temp && q.tadj!==0) out.push("1 × Ajuste: "+q.temp.nombre+" ("+(q.temp.pct>0?"+":"-")+Math.abs(q.temp.pct)+" %): "+(q.tadj<0?"-":"")+fmt(Math.abs(q.tadj)));
   return out;
 }
 function itemsForDb(){
@@ -1303,21 +1323,48 @@ if("IntersectionObserver" in window){
 }
 
 if(DB){ $("#priv").textContent="Al enviar, guardamos tu nombre, tu usuario de Instagram y tu cotización para gestionar tu reserva. No guardamos tu número de teléfono."; }
+function aplicarCatalogo(cat){
+  var okFoto=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+  var piezas = Array.isArray(cat) ? cat : ((cat && cat.piezas) || []);
+  piezas.forEach(function(x){
+    if(!x||!x.id||!/^[a-z0-9][a-z0-9-]{1,40}$/.test(String(x.id))) return;
+    if(byId[x.id]){   /* pieza original: puede cambiar la foto y el precio */
+      if(x.foto && okFoto.test(x.foto)) byId[x.id].foto=x.foto;
+      var pr=Number(x.precio); if(x.precio!=null && !isNaN(pr) && pr>=0 && pr<=500) byId[x.id].price=pr;
+      return;
+    }
+    var cat2=CATS.some(function(c){return c.id===x.cat;}) ? x.cat : "extras";
+    var it={id:String(x.id),cat:cat2,name:limp(x.nombre),desc:limp(x.desc),price:Number(x.precio)||0,counts:x.cuenta!==false,icon:"caja",foto:(x.foto&&okFoto.test(x.foto))?x.foto:null};
+    if(!it.name) return;
+    ITEMS.push(it); byId[it.id]=it;
+  });
+  ((cat && cat.combos) || []).forEach(function(x){
+    if(!x||!/^[a-z0-9][a-z0-9-]{0,40}$/.test(String(x.id))) return;
+    var ex=COMBOS.filter(function(c){return c.id===x.id;})[0];
+    if(x.activo===false){ if(ex) COMBOS.splice(COMBOS.indexOf(ex),1); return; }
+    var precio=Number(x.precio); if(isNaN(precio)||precio<0||precio>1000) return;
+    var ids=Array.isArray(x.items)?x.items:[], valido=ids.length>0 && ids.every(function(i){ return typeof i==="string" && byId[i]; });
+    var foto=(x.foto&&okFoto.test(x.foto))?x.foto:null;
+    var suma=valido ? ids.reduce(function(t,i){ return t+byId[i].price; },0) : 0;
+    if(valido && precio>suma+0.001){ if(ex) COMBOS.splice(COMBOS.indexOf(ex),1); return; }   /* un combo más caro que sus piezas sueltas no se muestra */
+    if(ex){ ex.price=precio; if(limp(x.nombre)) ex.name=limp(x.nombre); if(valido) ex.items=ids.slice(); if(foto) ex.foto=foto; }
+    else if(valido){ COMBOS.push({id:String(x.id),name:limp(x.nombre)||"Combo",price:precio,items:ids.slice(),img:null,foto:foto}); }
+  });
+  TEMPS.length=0;
+  ((cat && cat.temporadas) || []).forEach(function(t){
+    var p=Number(t.pct), f=/^\d{4}-\d{2}-\d{2}$/;
+    if(t && f.test(String(t.desde)) && f.test(String(t.hasta)) && !isNaN(p) && p>=-90 && p<=200 && p!==0 && limp(t.nombre)) TEMPS.push({nombre:limp(t.nombre),desde:t.desde,hasta:t.hasta,pct:p});
+  });
+}
 if(DB){
-  rpc("catalogo_extra",{},6000).then(function(arr){
-    if(!Array.isArray(arr)) return;
-    var okFoto=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
-    arr.forEach(function(x){
-      if(!x||!x.id||byId[x.id]||!/^[a-z0-9][a-z0-9-]{1,40}$/.test(String(x.id))) return;
-      var cat=CATS.some(function(c){return c.id===x.cat;}) ? x.cat : "extras";
-      var it={id:String(x.id),cat:cat,name:limp(x.nombre),desc:limp(x.desc),price:Number(x.precio)||0,counts:x.cuenta!==false,icon:"caja",foto:(x.foto&&okFoto.test(x.foto))?x.foto:null};
-      if(!it.name) return;
-      ITEMS.push(it); byId[it.id]=it;
-    });
-    for(var k in state.pend){ if(byId[k]) state.cart[k]=state.pend[k]; }
-    state.pend={};
-    renderCatalog(); update(false);
-  }).catch(function(){});
+  try{
+    rpc("catalogo_publico",{},6000).catch(function(){ return rpc("catalogo_extra",{},6000); }).then(function(cat){
+      aplicarCatalogo(cat);
+      for(var k in state.pend){ if(byId[k]) state.cart[k]=state.pend[k]; }
+      state.pend={};
+      renderCatalog(); update(false);
+    }).catch(function(){});
+  }catch(e){}
 }
 load();
 if(state.form.date && new Date(state.form.date+"T00:00:00")<today) state.form.date="";

@@ -95,6 +95,9 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:.9rem;color:var(--ink2)}
 .inv .nm{font-weight:700}
 .inv .chk{display:flex;align-items:center;gap:6px;font-size:.85rem}
 .inv .chk input{width:20px;height:20px;min-height:0}
+.invfoto{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 0 10px;border-bottom:1px solid var(--line);font-size:.85rem}
+.invfoto img{width:40px;height:40px;border-radius:8px;object-fit:cover}
+.invfoto input[type=file]{width:auto;min-height:0;border:0;padding:0;background:transparent;max-width:220px}
 
 .npg{display:grid;gap:10px;grid-template-columns:1fr 1fr}
 .npg .full{grid-column:1/-1}
@@ -110,6 +113,14 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:.9rem;color:var(--ink2)}
 .inv2 .chk input{width:20px;height:20px;min-height:0}
 .inv2 .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
 h3.sec{margin:20px 0 6px;font-size:1.2rem}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line)}
+.prow .nm{font-weight:700}
+.prow .pr{display:flex;align-items:center;gap:4px;font-weight:700}
+.prow .pr input{width:100px}
+.prow.cambio{background:var(--warn-bg);border-radius:10px}
+.perow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:.9rem}
+.perow input{width:64px;min-height:38px}
+.tcard .row1{align-items:center}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--green);color:var(--btn-ink);padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;max-width:92vw;text-align:center}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
@@ -143,6 +154,9 @@ h3.sec{margin:20px 0 6px;font-size:1.2rem}
       <button role="tab" aria-selected="true" data-tab="cot">Cotizaciones</button>
       <button role="tab" aria-selected="false" data-tab="cal">Calendario</button>
       <button role="tab" aria-selected="false" data-tab="inv">Inventario</button>
+      <button role="tab" aria-selected="false" data-tab="pre">Precios</button>
+      <button role="tab" aria-selected="false" data-tab="com">Combos</button>
+      <button role="tab" aria-selected="false" data-tab="tem">Temporadas</button>
     </div>
 
     <div id="tab-cot">
@@ -200,6 +214,46 @@ h3.sec{margin:20px 0 6px;font-size:1.2rem}
           <div class="field"><label for="c-desp">Días después</label><input id="c-desp" type="number" min="0" max="7"></div>
           <div class="full acts"><button class="btn small" id="c-save" type="button">Guardar</button></div>
         </div>
+      </div>
+    </div>
+
+    <div id="tab-pre" hidden>
+      <p class="meta">Cambia aquí los precios de cada pieza cuando cambie la temporada. Las filas con cambios se marcan; al terminar toca <b>Guardar todos los cambios</b>. El cotizador toma los precios nuevos al cargarse. Los combos tienen su propio precio, en la pestaña Combos.</p>
+      <p class="msg" id="pre-aviso" hidden>Faltan precios en la base de datos. Corre el archivo 04-precios-combos-temporadas.sql en Supabase.</p>
+      <div id="pre-list"></div>
+      <div style="margin-top:14px"><button class="btn" id="pre-save" type="button">Guardar todos los cambios</button></div>
+    </div>
+
+    <div id="tab-com" hidden>
+      <p class="meta">Aquí cambias el precio, las piezas y la foto de tus combos, ocultas los que no quieras mostrar y creas combos nuevos. Un combo solo se muestra si su precio es menor o igual que la suma de sus piezas por separado.</p>
+      <div id="com-list"></div>
+      <div class="panel">
+        <h3>Crear un combo nuevo</h3>
+        <form id="cmForm" class="npg" autocomplete="off">
+          <div class="field full"><label for="cm-nombre">Nombre del combo</label><input id="cm-nombre" maxlength="60" required placeholder="Ej.: Combo Quinceañera"></div>
+          <div class="field"><label for="cm-precio">Precio del combo ($)</label><input id="cm-precio" type="number" min="0" max="1000" step="0.5" required></div>
+          <div class="field"><label for="cm-foto">Foto (opcional)</label><input id="cm-foto" type="file" accept="image/*"></div>
+          <div class="full"><b>Piezas que incluye</b> <span class="meta">(escribe la cantidad de cada una)</span><div id="cm-pe" class="pe" style="margin-top:6px"></div><p class="meta" id="cm-sum"></p></div>
+          <p class="msg full" id="cm-msg" role="alert"></p>
+          <div class="full"><button class="btn" id="cm-go" type="submit">Crear combo</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="tab-tem" hidden>
+      <p class="meta">Una temporada ajusta el precio total según la <b>fecha del evento</b> que escribe el cliente: un recargo para la temporada alta o un descuento para una oferta. Se ve en la cotización como una línea aparte. Si dos temporadas se cruzan, se usa la que empieza más tarde.</p>
+      <div id="tem-list"></div>
+      <div class="panel">
+        <h3>Agregar una temporada</h3>
+        <form id="tmForm" class="npg" autocomplete="off">
+          <div class="field full"><label for="tm-nombre">Nombre</label><input id="tm-nombre" maxlength="60" required placeholder="Ej.: Temporada alta de diciembre"></div>
+          <div class="field"><label for="tm-tipo">Tipo</label><select id="tm-tipo"><option value="+">Recargo (sube el precio)</option><option value="-">Descuento (baja el precio)</option></select></div>
+          <div class="field"><label for="tm-pct">Porcentaje (%)</label><input id="tm-pct" type="number" min="0.5" max="90" step="0.5" required></div>
+          <div class="field"><label for="tm-desde">Eventos desde</label><input id="tm-desde" type="date" required></div>
+          <div class="field"><label for="tm-hasta">Eventos hasta</label><input id="tm-hasta" type="date" required></div>
+          <p class="msg full" id="tm-msg" role="alert"></p>
+          <div class="full"><button class="btn" id="tm-go" type="submit">Agregar temporada</button></div>
+        </form>
       </div>
     </div>
   </section>
@@ -301,9 +355,9 @@ function showApp(){
 $$(".tabs button").forEach(function(b){
   b.addEventListener("click", function(){
     $$(".tabs button").forEach(function(x){ x.setAttribute("aria-selected", x===b ? "true":"false"); });
-    ["cot","cal","inv"].forEach(function(t){ $("#tab-"+t).hidden = (t!==b.getAttribute("data-tab")); });
+    ["cot","cal","inv","pre","com","tem"].forEach(function(t){ $("#tab-"+t).hidden = (t!==b.getAttribute("data-tab")); });
     var t = b.getAttribute("data-tab");
-    if(t==="cal") loadCal(); if(t==="inv") renderInv(); if(t==="cot") loadCot();
+    if(t==="cal") loadCal(); if(t==="inv") renderInv(); if(t==="cot") loadCot(); if(t==="pre") renderPre(); if(t==="com"){ loadCombos(); refrescarNuevoCombo(); } if(t==="tem") loadTemps();
   });
 });
 
@@ -464,14 +518,19 @@ var CATEGORIAS = [["arcos","Arcos y aros"],["bases","Bases, mesitas y escaleras"
 function catNombre(id){ var f = CATEGORIAS.filter(function(c){ return c[0]===id; })[0]; return f ? f[1] : id; }
 function renderInv(){
   var box = $("#inv-list"); box.innerHTML = "";
-  inv.filter(function(i){ return i.precio==null; }).forEach(function(i){
+  inv.filter(function(i){ return i.categoria==null; }).forEach(function(i){
     var row = document.createElement("div"); row.className = "inv"; row.setAttribute("data-id", i.item_id);
     row.innerHTML = '<span class="nm">'+esc(i.nombre)+'</span><input type="number" min="0" max="999" value="'+esc(i.unidades)+'" aria-label="Unidades de '+esc(i.nombre)+'">'+
       '<label class="chk"><input type="checkbox"'+(i.activo?" checked":"")+'> activa</label><button class="btn small" type="button">Guardar</button>';
     box.appendChild(row);
+    var tiene = i.foto && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(i.foto);
+    var fr = document.createElement("div"); fr.className = "invfoto"; fr.setAttribute("data-fid", i.item_id);
+    fr.innerHTML = (tiene ? '<img src="'+i.foto+'" alt="">' : '')+'<span class="meta">Foto: '+(tiene?"personalizada":"la original")+'</span>'+
+      '<input type="file" accept="image/*" aria-label="Cambiar la foto de '+esc(i.nombre)+'">'+(tiene?'<button class="btn ghost small" type="button" data-x="quitar-foto">Volver a la original</button>':'');
+    box.appendChild(fr);
   });
   var ex = $("#extra-list"); ex.innerHTML = "";
-  var extras = inv.filter(function(i){ return i.precio!=null; });
+  var extras = inv.filter(function(i){ return i.categoria!=null; });
   if(!extras.length){ ex.innerHTML = '<p class="meta">Todavía no has agregado piezas nuevas.</p>'; }
   extras.forEach(function(i){
     var row = document.createElement("div"); row.className = "inv2"; row.setAttribute("data-id", i.item_id);
@@ -486,12 +545,27 @@ function renderInv(){
 }
 $("#inv-list").addEventListener("click", function(e){
   var b = e.target.closest("button"); if(!b) return;
-  var row = b.closest(".inv"), id = row.getAttribute("data-id");
+  var row = b.closest(".inv"); if(!row) return;
+  var id = row.getAttribute("data-id");
   var u = parseInt($('input[type="number"]', row).value, 10), act = $('input[type="checkbox"]', row).checked;
   if(isNaN(u) || u<0){ toast("Escribe un número válido"); return; }
   api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{unidades:u, activo:act}, headers:{"Prefer":"return=representation"}})
     .then(function(r){ if(!r||!r.length) throw new Error("No se guardó"); inv.forEach(function(i){ if(i.item_id===id){ i.unidades=u; i.activo=act; } }); toast("Inventario guardado"); })
     .catch(function(x){ toast(x.message); });
+});
+function guardarFotoOriginal(id, foto, msg){
+  return api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{foto:foto}, headers:{"Prefer":"return=representation"}})
+    .then(function(r){ if(!r||!r.length) throw new Error("No se guardó. ¿Corriste el archivo 03-fotos-piezas-originales.sql?"); inv.forEach(function(i){ if(i.item_id===id) i.foto = foto; }); renderInv(); toast(msg); });
+}
+$("#inv-list").addEventListener("change", function(e){
+  var f = e.target.closest('.invfoto input[type="file"]'); if(!f || !f.files[0]) return;
+  var id = f.closest(".invfoto").getAttribute("data-fid");
+  leerFoto(f.files[0], 480).then(function(u){ return guardarFotoOriginal(id, u, "Foto guardada. Recarga el cotizador para verla."); }).catch(function(x){ toast(x.message); });
+});
+$("#inv-list").addEventListener("click", function(e){
+  var b = e.target.closest('button[data-x="quitar-foto"]'); if(!b) return;
+  var id = b.closest(".invfoto").getAttribute("data-fid");
+  guardarFotoOriginal(id, null, "Volvió la foto original.").catch(function(x){ toast(x.message); });
 });
 $("#c-save").addEventListener("click", function(){
   var a = parseInt($("#c-antes").value,10), d = parseInt($("#c-desp").value,10);
@@ -511,7 +585,7 @@ function slugDe(n){
   while(inv.some(function(i){ return i.item_id===id; })) id = b+"-"+(k++);
   return id;
 }
-function leerFoto(file){
+function leerFoto(file, max){
   return new Promise(function(res, rej){
     var fr = new FileReader();
     fr.onerror = function(){ rej(new Error("No se pudo leer la foto")); };
@@ -519,7 +593,7 @@ function leerFoto(file){
       var img = new Image();
       img.onerror = function(){ rej(new Error("Ese archivo no parece una imagen válida")); };
       img.onload = function(){
-        var max = 640, k = Math.min(1, max/Math.max(img.width, img.height));
+        var mx = max || 640, k = Math.min(1, mx/Math.max(img.width, img.height));
         var c = document.createElement("canvas"); c.width = Math.max(1,Math.round(img.width*k)); c.height = Math.max(1,Math.round(img.height*k));
         var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
         var q = 0.74, out = c.toDataURL("image/jpeg", q);
@@ -574,6 +648,202 @@ $("#extra-list").addEventListener("click", function(e){
         toast(/foreign key|violates/i.test(err.message) ? "Ya aparece en cotizaciones. Mejor desmarca 'visible en el cotizador'." : err.message);
       });
   }
+});
+
+/* ---------- precios, combos y temporadas ---------- */
+var okFotoRe = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+var combos = [], temps = [], ORIGINALES = {c1:1,c2:1,c3:1,c4:1,c5:1,c6:1};
+function dinero(n){ var c = Math.round(Number(n||0)*100); return "$"+(c%100===0 ? String(c/100) : (c/100).toFixed(2)); }
+function precioItem(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f && f.precio!=null ? Number(f.precio) : 0; }
+
+/* Precios */
+function renderPre(){
+  var box = $("#pre-list"); box.innerHTML = "";
+  $("#pre-aviso").hidden = !inv.some(function(i){ return i.precio==null; });
+  inv.slice().sort(function(a,b){ return a.nombre.localeCompare(b.nombre,"es"); }).forEach(function(i){
+    var row = document.createElement("div"); row.className = "prow"; row.setAttribute("data-id", i.item_id);
+    var v = i.precio==null ? "" : i.precio;
+    row.innerHTML = '<span class="nm">'+esc(i.nombre)+(i.categoria?' <small class="meta">(pieza nueva)</small>':'')+'</span>'+
+      '<label class="pr">$<input type="number" min="0" max="500" step="0.5" data-orig="'+esc(v)+'" value="'+esc(v)+'" aria-label="Precio de '+esc(i.nombre)+'"></label>';
+    box.appendChild(row);
+  });
+}
+$("#pre-list").addEventListener("input", function(e){
+  var inp = e.target; if(inp.tagName!=="INPUT") return;
+  inp.closest(".prow").classList.toggle("cambio", inp.value !== inp.getAttribute("data-orig"));
+});
+$("#pre-save").addEventListener("click", function(){
+  var filas = $$("#pre-list .prow.cambio");
+  if(!filas.length){ toast("No hay cambios por guardar"); return; }
+  var tareas = [], malos = 0;
+  filas.forEach(function(f){
+    var id = f.getAttribute("data-id"), inp = $("input", f), p = Number(inp.value);
+    if(inp.value==="" || isNaN(p) || p<0 || p>500){ malos++; return; }
+    tareas.push(api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{precio:p}, headers:{"Prefer":"return=representation"}}).then(function(r){
+      if(!r || !r.length) throw new Error("No se guardó");
+      inv.forEach(function(i){ if(i.item_id===id) i.precio = p; });
+      inp.setAttribute("data-orig", String(p)); f.classList.remove("cambio");
+    }));
+  });
+  if(malos) toast("Revisa los precios: deben estar entre 0 y 500");
+  Promise.all(tareas).then(function(){ if(tareas.length) toast(tareas.length+(tareas.length===1?" precio guardado":" precios guardados")+". Recarga el cotizador para verlos."); })
+    .catch(function(x){ toast(x.message); });
+});
+
+/* Editor de piezas de un combo */
+function peHtml(items){
+  var cnt = {}; (items||[]).forEach(function(id){ cnt[id] = (cnt[id]||0)+1; });
+  return inv.filter(function(i){ return i.activo || cnt[i.item_id]; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre,"es"); }).map(function(i){
+    return '<label class="perow"><span>'+esc(i.nombre)+' <small class="meta">'+dinero(precioItem(i.item_id))+'</small></span>'+
+      '<input type="number" min="0" max="9" step="1" data-pid="'+esc(i.item_id)+'" value="'+(cnt[i.item_id]||0)+'" aria-label="Cantidad de '+esc(i.nombre)+'"></label>';
+  }).join("");
+}
+function peLeer(box){
+  var out = [];
+  $$("input[data-pid]", box).forEach(function(inp){ var n = Math.min(9, Math.max(0, parseInt(inp.value,10)||0)); for(var k=0;k<n;k++) out.push(inp.getAttribute("data-pid")); });
+  return out;
+}
+function peResumen(box, precioInp, salida){
+  var items = peLeer(box), suma = items.reduce(function(s,id){ return s+precioItem(id); }, 0), p = Number(precioInp.value);
+  var t = "Piezas: "+items.length+". Por separado: "+dinero(suma)+".";
+  if(precioInp.value!=="" && !isNaN(p)){
+    if(p > suma+0.001) t += ' <b class="over-t">Atención: el precio del combo es mayor que sus piezas por separado; no se mostrará en el cotizador.</b>';
+    else t += " El cliente ahorra "+dinero(suma-p)+".";
+  }
+  salida.innerHTML = t;
+}
+
+/* Combos */
+function loadCombos(){
+  return api("combos?select=*&order=orden.asc,creada.asc").then(function(r){ combos = r; renderCombos(); }).catch(function(x){ toast(x.message); });
+}
+function renderCombos(){
+  var box = $("#com-list"); box.innerHTML = "";
+  if(!combos.length){ box.innerHTML = '<p class="meta">No hay combos. ¿Corriste el archivo 04-precios-combos-temporadas.sql en Supabase?</p>'; return; }
+  combos.forEach(function(c){
+    var el = document.createElement("article"); el.className = "card"; el.setAttribute("data-cid", c.id);
+    var orig = !!ORIGINALES[c.id], tieneFoto = c.foto && okFotoRe.test(c.foto);
+    el.innerHTML = '<div class="row1"><div><span class="code">'+esc(c.nombre)+'</span> <span class="badge">'+(orig?"combo original":"combo nuevo")+'</span>'+(c.activo?"":' <span class="badge b-cancelada">oculto</span>')+'</div></div>'+
+      '<div class="ctrl">'+
+        '<div class="field"><label>Nombre</label><input data-k="nombre" maxlength="60" value="'+esc(c.nombre)+'"></div>'+
+        '<div class="field"><label>Precio del combo ($)</label><input data-k="precio" type="number" min="0" max="1000" step="0.5" value="'+esc(c.precio)+'"></div>'+
+        '<label class="chkline full"><input data-k="activo" type="checkbox"'+(c.activo?" checked":"")+'> Visible en el cotizador</label>'+
+        '<div class="full"><details><summary>Piezas del combo</summary><div class="pe" style="margin-top:8px">'+peHtml(c.items)+'</div></details><p class="meta" data-sum></p></div>'+
+        '<div class="full invfoto">'+(tieneFoto?'<img src="'+c.foto+'" alt="">':'')+'<span class="meta">Foto: '+(tieneFoto?"personalizada":(orig?"la original":"sin foto (se muestra un icono)"))+'</span><input type="file" accept="image/*" aria-label="Foto del combo">'+(tieneFoto?'<button class="btn ghost small" type="button" data-x="quitar-foto">Quitar foto</button>':'')+'</div>'+
+        '<div class="full acts"><button class="btn small" type="button" data-x="guardar">Guardar cambios</button>'+(orig?'':'<button class="btn ghost small" type="button" data-x="borrar">Eliminar</button>')+'</div>'+
+      '</div>';
+    box.appendChild(el);
+    peResumen($(".pe", el), $('[data-k="precio"]', el), $("[data-sum]", el));
+  });
+}
+function reemplazarCombo(r){ combos = combos.map(function(c){ return c.id===r.id ? r : c; }); renderCombos(); }
+function patchCombo(id, body, msg){
+  return api("combos?id=eq."+encodeURIComponent(id), {method:"PATCH", body:body, headers:{"Prefer":"return=representation"}}).then(function(r){
+    if(!r || !r.length) throw new Error("No se guardó. ¿Corriste el archivo 04-precios-combos-temporadas.sql?");
+    reemplazarCombo(r[0]); toast(msg);
+  }).catch(function(x){ toast(x.message); });
+}
+$("#com-list").addEventListener("input", function(e){
+  var el = e.target.closest(".card"); if(!el) return;
+  peResumen($(".pe", el), $('[data-k="precio"]', el), $("[data-sum]", el));
+});
+$("#com-list").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-x]"); if(!b) return;
+  var el = b.closest(".card"), id = el.getAttribute("data-cid"), x = b.getAttribute("data-x");
+  if(x==="guardar"){
+    var nombre = limpio($('[data-k="nombre"]', el).value), precio = Number($('[data-k="precio"]', el).value), items = peLeer($(".pe", el)), activo = $('[data-k="activo"]', el).checked;
+    if(nombre.length < 1){ toast("Escribe un nombre"); return; }
+    if(isNaN(precio) || precio<0 || precio>1000){ toast("El precio debe estar entre 0 y 1000"); return; }
+    if(!items.length){ toast("El combo necesita al menos una pieza"); return; }
+    patchCombo(id, {nombre:nombre, precio:precio, items:items, activo:activo}, "Combo guardado. Recarga el cotizador para verlo.");
+  }
+  if(x==="quitar-foto") patchCombo(id, {foto:null}, "Foto quitada.");
+  if(x==="borrar"){
+    if(!window.confirm("¿Eliminar este combo?")) return;
+    api("combos?id=eq."+encodeURIComponent(id), {method:"DELETE", headers:{"Prefer":"return=representation"}})
+      .then(function(){ combos = combos.filter(function(c){ return c.id!==id; }); renderCombos(); toast("Combo eliminado"); })
+      .catch(function(err){ toast(err.message); });
+  }
+});
+$("#com-list").addEventListener("change", function(e){
+  var f = e.target.closest('input[type="file"]'); if(!f || !f.files[0]) return;
+  var id = f.closest(".card").getAttribute("data-cid");
+  leerFoto(f.files[0], 640).then(function(u){ return patchCombo(id, {foto:u}, "Foto guardada. Recarga el cotizador para verla."); }).catch(function(x){ toast(x.message); });
+});
+/* Combo nuevo */
+var fotoComboNuevo = null;
+function refrescarNuevoCombo(){ $("#cm-pe").innerHTML = peHtml([]); peResumen($("#cm-pe"), $("#cm-precio"), $("#cm-sum")); }
+$("#cmForm").addEventListener("input", function(){ peResumen($("#cm-pe"), $("#cm-precio"), $("#cm-sum")); });
+$("#cm-foto").addEventListener("change", function(){
+  var f = this.files[0]; fotoComboNuevo = null; if(!f) return;
+  leerFoto(f, 640).then(function(u){ fotoComboNuevo = u; $("#cm-msg").textContent = ""; }).catch(function(e){ $("#cm-msg").textContent = e.message; });
+});
+$("#cmForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var msg = $("#cm-msg"), btn = $("#cm-go"); msg.textContent = "";
+  var nombre = limpio($("#cm-nombre").value), precio = Number($("#cm-precio").value), items = peLeer($("#cm-pe"));
+  if(nombre.length < 2){ msg.textContent = "Escribe el nombre del combo."; return; }
+  if(isNaN(precio) || precio<0 || precio>1000){ msg.textContent = "El precio debe estar entre 0 y 1000."; return; }
+  if(!items.length){ msg.textContent = "Elige al menos una pieza."; return; }
+  var suma = items.reduce(function(s,id){ return s+precioItem(id); }, 0);
+  if(precio > suma+0.001){ msg.textContent = "El precio del combo ("+dinero(precio)+") no puede ser mayor que sus piezas por separado ("+dinero(suma)+")."; return; }
+  var base = nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,28) || "combo";
+  var id = "cb-"+base, k = 2; while(combos.some(function(c){ return c.id===id; })) id = "cb-"+base+"-"+(k++);
+  btn.disabled = true;
+  api("combos", {method:"POST", body:{id:id, nombre:nombre, precio:precio, items:items, foto:fotoComboNuevo, activo:true, orden:100+combos.length}, headers:{"Prefer":"return=representation"}})
+    .then(function(r){
+      if(!r || !r.length) throw new Error("No se guardó. ¿Corriste el archivo 04-precios-combos-temporadas.sql?");
+      combos.push(r[0]); $("#cmForm").reset(); fotoComboNuevo = null; renderCombos(); refrescarNuevoCombo(); toast("Combo creado. Recarga el cotizador para verlo.");
+    }).catch(function(x){ msg.textContent = x.message; }).then(function(){ btn.disabled = false; });
+});
+
+/* Temporadas */
+function loadTemps(){
+  return api("temporadas?select=*&order=desde.asc").then(function(r){ temps = r; renderTemps(); }).catch(function(x){ toast(x.message); });
+}
+function renderTemps(){
+  var box = $("#tem-list"); box.innerHTML = "";
+  if(!temps.length){ box.innerHTML = '<p class="meta">Todavía no hay temporadas. Los precios son los mismos todo el año.</p>'; return; }
+  var hoy = iso(new Date());
+  temps.forEach(function(t){
+    var p = Number(t.porcentaje), el = document.createElement("article"); el.className = "card tcard"; el.setAttribute("data-tid", t.id);
+    el.innerHTML = '<div class="row1"><div><span class="code">'+esc(t.nombre)+'</span> <span class="badge '+(p<0?"b-abonada":"b-nueva")+'">'+(p>0?"+":"−")+esc(Math.abs(p))+' %</span>'+(t.hasta<hoy?' <span class="badge">terminó</span>':'')+'</div></div>'+
+      '<p class="meta">Eventos del <b>'+esc(fdate(t.desde,true))+'</b> al <b>'+esc(fdate(t.hasta,true))+'</b>.</p>'+
+      '<div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label class="chkline"><input data-k="activo" type="checkbox"'+(t.activo?" checked":"")+'> Activa</label>'+
+      '<button class="btn small" type="button" data-x="guardar">Guardar</button><button class="btn ghost small" type="button" data-x="borrar">Eliminar</button></div>';
+    box.appendChild(el);
+  });
+}
+$("#tem-list").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-x]"); if(!b) return;
+  var el = b.closest(".card"), id = el.getAttribute("data-tid"), x = b.getAttribute("data-x");
+  if(x==="guardar"){
+    var act = $('[data-k="activo"]', el).checked;
+    api("temporadas?id=eq."+encodeURIComponent(id), {method:"PATCH", body:{activo:act}, headers:{"Prefer":"return=representation"}}).then(function(r){
+      if(!r || !r.length) throw new Error("No se guardó"); temps = temps.map(function(t){ return t.id===id ? r[0] : t; }); toast(act ? "Temporada activa" : "Temporada desactivada");
+    }).catch(function(err){ toast(err.message); });
+  }
+  if(x==="borrar"){
+    if(!window.confirm("¿Eliminar esta temporada?")) return;
+    api("temporadas?id=eq."+encodeURIComponent(id), {method:"DELETE", headers:{"Prefer":"return=representation"}})
+      .then(function(){ temps = temps.filter(function(t){ return t.id!==id; }); renderTemps(); toast("Temporada eliminada"); })
+      .catch(function(err){ toast(err.message); });
+  }
+});
+$("#tmForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var msg = $("#tm-msg"), btn = $("#tm-go"); msg.textContent = "";
+  var nombre = limpio($("#tm-nombre").value), pct = Number($("#tm-pct").value), desde = $("#tm-desde").value, hasta = $("#tm-hasta").value, signo = $("#tm-tipo").value;
+  if(nombre.length < 2){ msg.textContent = "Escribe el nombre de la temporada."; return; }
+  if(isNaN(pct) || pct<=0 || pct>(signo==="-"?90:200)){ msg.textContent = signo==="-" ? "El descuento debe estar entre 0.5 y 90 %." : "El recargo debe estar entre 0.5 y 200 %."; return; }
+  if(!desde || !hasta){ msg.textContent = "Elige las fechas."; return; }
+  if(hasta < desde){ msg.textContent = "La fecha final no puede ser anterior a la inicial."; return; }
+  btn.disabled = true;
+  api("temporadas", {method:"POST", body:{nombre:nombre, desde:desde, hasta:hasta, porcentaje:(signo==="-"?-pct:pct), activo:true}, headers:{"Prefer":"return=representation"}})
+    .then(function(r){
+      if(!r || !r.length) throw new Error("No se guardó. ¿Corriste el archivo 04-precios-combos-temporadas.sql?");
+      temps.push(r[0]); temps.sort(function(a,b){ return a.desde<b.desde?-1:1; }); $("#tmForm").reset(); renderTemps(); toast("Temporada agregada. Recarga el cotizador para verla.");
+    }).catch(function(x){ msg.textContent = x.message; }).then(function(){ btn.disabled = false; });
 });
 
 /* ---------- eventos de acceso ---------- */

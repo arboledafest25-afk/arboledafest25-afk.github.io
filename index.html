@@ -853,8 +853,8 @@ var CATS = [
 var ITEMS = [
   { id:"arco-romano",  cat:"arcos",  img:"arco-romano",  name:"Arco romano",              desc:"Dorado, 1.80 × 1 m, con bases desmontables.",           price:10,  counts:true },
   { id:"aro-circular", cat:"arcos",  img:"aro-circular", name:"Aro circular",             desc:"Dorado, 2 × 2 m, con bases desmontables.",              price:10,  counts:true },
-  { id:"cilindros",    cat:"bases",  img:"cilindros",    name:"Set de 3 cilindros",       desc:"Blancos, de PVC. Alturas de 80, 70 y 60 cm.",           price:18,  counts:true },
-  { id:"mesitas",      cat:"bases",  img:"mesitas",      name:"Set de 4 mesitas doradas", desc:"De metal, cuatro alturas: de 40 cm a 1 m.",             price:14,  counts:true },
+  { id:"cilindros",    cat:"bases",  img:"cilindros",    name:"Set de 3 cilindros",       desc:"Blancos, de PVC. Alturas de 80, 70 y 60 cm.",           price:18,  counts:true, pack:3, unitName:"Cilindro blanco" },
+  { id:"mesitas",      cat:"bases",  img:"mesitas",      name:"Set de 4 mesitas doradas", desc:"De metal, cuatro alturas: de 40 cm a 1 m.",             price:14,  counts:true, pack:4, unitName:"Mesita dorada" },
   { id:"esc2",         cat:"bases",  img:"esc2",         name:"Escalera de 2 niveles",    desc:"Madera blanca, 45 cm de alto.",                         price:5,   counts:true },
   { id:"esc4",         cat:"bases",  img:"esc4",         name:"Escalera de 4 niveles",    desc:"Madera blanca, 1.20 m de alto.",                        price:12,  counts:true },
   { id:"bandejas",     cat:"bases",  img:"bandejas",     name:"Set de base y bandejas",   desc:"Base para torta y dos bandejas negras con borde dorado.",                   price:3,   counts:true },  /* estimado */
@@ -895,6 +895,17 @@ var ICONS = {
 };
 
 var byId = {}; ITEMS.forEach(function(i){ byId[i.id]=i; });
+/* Las piezas que vienen en sets (pack > 1) también se pueden pedir por unidad: precio del set dividido entre sus piezas */
+function generarUnidades(){
+  for(var i=ITEMS.length-1;i>=0;i--){ if(ITEMS[i].unitOf){ delete byId[ITEMS[i].id]; ITEMS.splice(i,1); } }
+  ITEMS.slice().forEach(function(it){
+    if(it.pack>1 && it.unitName){
+      var u={id:it.id+"--u",cat:it.cat,name:it.unitName+" (unidad)",desc:"Una sola pieza. El set trae "+it.pack+".",price:Math.round(it.price/it.pack*100)/100,counts:it.counts,icon:it.icon||"caja",img:it.img,foto:it.foto,unitOf:it.id};
+      ITEMS.splice(ITEMS.indexOf(it)+1,0,u); byId[u.id]=u;
+    }
+  });
+}
+generarUnidades();
 function fmt(n){ var c=Math.round(n*100); return "$"+(c%100===0 ? String(c/100) : (c/100).toFixed(2)); }
 function $(s){ return document.querySelector(s); }
 function newId(){
@@ -1331,13 +1342,16 @@ function aplicarCatalogo(cat){
     if(byId[x.id]){   /* pieza original: puede cambiar la foto y el precio */
       if(x.foto && okFoto.test(x.foto)) byId[x.id].foto=x.foto;
       var pr=Number(x.precio); if(x.precio!=null && !isNaN(pr) && pr>=0 && pr<=500) byId[x.id].price=pr;
+      if(x.pack!=null){ var pk=parseInt(x.pack,10); if(pk>1 && pk<=50 && limp(x.unidad)){ byId[x.id].pack=pk; byId[x.id].unitName=limp(x.unidad); } else { byId[x.id].pack=1; byId[x.id].unitName=null; } }
       return;
     }
     var cat2=CATS.some(function(c){return c.id===x.cat;}) ? x.cat : "extras";
     var it={id:String(x.id),cat:cat2,name:limp(x.nombre),desc:limp(x.desc),price:Number(x.precio)||0,counts:x.cuenta!==false,icon:"caja",foto:(x.foto&&okFoto.test(x.foto))?x.foto:null};
+    var pk2=parseInt(x.pack,10); if(pk2>1 && pk2<=50 && limp(x.unidad)){ it.pack=pk2; it.unitName=limp(x.unidad); }
     if(!it.name) return;
     ITEMS.push(it); byId[it.id]=it;
   });
+  generarUnidades();
   ((cat && cat.combos) || []).forEach(function(x){
     if(!x||!/^[a-z0-9][a-z0-9-]{0,40}$/.test(String(x.id))) return;
     var ex=COMBOS.filter(function(c){return c.id===x.id;})[0];

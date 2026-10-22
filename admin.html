@@ -197,6 +197,8 @@ h3.sec{margin:20px 0 6px;font-size:1.2rem}
           <div class="field full"><label for="np-desc">Descripción corta (medidas, material)</label><input id="np-desc" maxlength="120" placeholder="Ej.: Dorado, 2 × 1.5 m, con bases"></div>
           <div class="field"><label for="np-precio">Precio de alquiler ($)</label><input id="np-precio" type="number" min="0" max="500" step="0.5" required></div>
           <div class="field"><label for="np-unid">Unidades que tienes</label><input id="np-unid" type="number" min="0" max="999" step="1" value="1" required></div>
+          <div class="field"><label for="np-pack">Si viene en set: piezas por set</label><input id="np-pack" type="number" min="1" max="50" step="1" value="1"></div>
+          <div class="field"><label for="np-unidad">Nombre de una unidad (si se vende suelta)</label><input id="np-unidad" maxlength="60" placeholder="Ej.: Mesita dorada"></div>
           <div class="field full"><label for="np-cat">Dónde aparece en el cotizador</label><select id="np-cat"></select></div>
           <div class="field full"><label for="np-foto">Foto (opcional)</label><input id="np-foto" type="file" accept="image/*"><img id="np-prev" class="prev" alt="Vista previa" hidden></div>
           <label class="chkline full"><input id="np-cuenta" type="checkbox" checked> Cuenta para los descuentos por cantidad (desmárcalo para cosas como las sillas)</label>
@@ -363,7 +365,7 @@ $$(".tabs button").forEach(function(b){
 
 /* ---------- cotizaciones ---------- */
 function loadCot(){
-  var q = "cotizaciones?select=*,cotizacion_items(item_id,cantidad)&limit=300";
+  var q = "cotizaciones?select=*,cotizacion_items(item_id,cantidad,en_unidades)&limit=300";
   var est = $("#f-estado").value, txt = $("#f-q").value.trim().replace(/[,()*%\\]/g,""), desde = $("#f-desde").value;
   if(est) q += "&estado=eq."+est;
   if(desde) q += "&fecha_evento=gte."+desde;
@@ -378,15 +380,19 @@ function loadCot(){
 }
 function pdfDeCot(c){
   var lineas = (c.detalle && c.detalle.length) ? c.detalle.map(AFPDF.parseLinea)
-    : (c.cotizacion_items||[]).map(function(i){ return {cant:String(i.cantidad), desc:invName(i.item_id), precio:""}; });
+    : (c.cotizacion_items||[]).map(function(i){ return {cant:String(i.cantidad), desc:nombreLinea(i), precio:""}; });
   return {codigo:c.codigo, emitida:new Date(c.creada), cliente:{nombre:c.nombre, instagram:c.instagram},
     evento:{fecha:c.fecha_evento, tipo:c.tipo_evento}, entrega:{tipo:c.entrega, zona:c.zona}, lineas:lineas,
     resumen:[], total:Number(c.total), abono:Number(c.abono||0), estado:c.estado, notas:c.notas, deposito:10};
 }
+function unidadDe(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f && f.nombre_unidad ? f.nombre_unidad : null; }
+function nombreLinea(i){ return i.en_unidades ? (unidadDe(i.item_id) || invName(i.item_id))+" (unidad)" : invName(i.item_id); }
+function clavePieza(i){ return i.item_id + (i.en_unidades ? "--u" : ""); }
+function packDe(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f && f.pack>1 ? Number(f.pack) : 1; }
 function invName(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f ? f.nombre : id; }
 function card(c){
   var el = document.createElement("article"); el.className = "card"; el.setAttribute("data-id", c.id);
-  var items = (c.cotizacion_items||[]).map(function(i){ return "<li>"+esc(i.cantidad)+" × "+esc(invName(i.item_id))+"</li>"; }).join("");
+  var items = (c.cotizacion_items||[]).map(function(i){ return "<li>"+esc(i.cantidad)+" × "+esc(nombreLinea(i))+"</li>"; }).join("");
   var det = (c.detalle||[]).map(function(l){ return "<li>"+esc(l)+"</li>"; }).join("");
   var opts = ESTADOS.map(function(e){ return '<option value="'+e[0]+'"'+(e[0]===c.estado?" selected":"")+'>'+e[1]+'</option>'; }).join("");
   el.innerHTML =
@@ -441,8 +447,8 @@ $("#cot-list").addEventListener("click", function(e){
   if(a==="save"){ return patch({estado:estado, abono:abono, notas_internas:notas}); }
   if(a==="abono"){ return patch({estado:"abonada", abono:abono>0?abono:10, notas_internas:notas}); }
   if(a==="libre"){
-    api("cotizaciones?id=eq."+id+"&select=fecha_evento,cotizacion_items(item_id,cantidad)").then(function(r){
-      var q = r[0], items = {}; q.cotizacion_items.forEach(function(i){ items[i.item_id]=i.cantidad; });
+    api("cotizaciones?id=eq."+id+"&select=fecha_evento,cotizacion_items(item_id,cantidad,en_unidades)").then(function(r){
+      var q = r[0], items = {}; q.cotizacion_items.forEach(function(i){ items[clavePieza(i)]=i.cantidad; });
       return api("rpc/disponibilidad", {method:"POST", body:{p_fecha:q.fecha_evento, p_items:items}}).then(function(d){
         if(d && !d.ok){
           var bad = d.items.filter(function(x){ return !x.ok; }).map(function(x){ return x.nombre+" (libres: "+x.libres+")"; }).join(", ");
@@ -467,7 +473,7 @@ function loadCal(){
   var first = new Date(calY, calM, 1), last = new Date(calY, calM+1, 0);
   var from = new Date(first); from.setDate(from.getDate()-8); var to = new Date(last); to.setDate(to.getDate()+8);
   $("#cal-title").textContent = first.toLocaleDateString("es-PA",{month:"long",year:"numeric"});
-  return api("cotizaciones?select=id,codigo,nombre,instagram,estado,total,fecha_evento,entrega,cotizacion_items(item_id,cantidad)&estado=neq.cancelada&fecha_evento=gte."+iso(from)+"&fecha_evento=lte."+iso(to)+"&limit=500")
+  return api("cotizaciones?select=id,codigo,nombre,instagram,estado,total,fecha_evento,entrega,cotizacion_items(item_id,cantidad,en_unidades)&estado=neq.cancelada&fecha_evento=gte."+iso(from)+"&fecha_evento=lte."+iso(to)+"&limit=500")
     .then(function(rows){ calData = rows; drawCal(); if(calSel) showDay(calSel); })
     .catch(function(e){ toast(e.message); });
 }
@@ -498,13 +504,13 @@ function showDay(k){
     return '<p class="meta"><span class="code">'+esc(c.codigo)+'</span> <span class="badge b-'+esc(c.estado)+'">'+esc(NOMBRE[c.estado]||c.estado)+'</span> · <b>'+esc(c.nombre)+'</b> @'+esc(c.instagram)+' · '+money(c.total)+' · '+(c.entrega==="delivery"?"delivery":"retiro")+'</p>';
   }).join("") : '<p class="meta">Sin eventos este día.</p>';
   var used = {};
-  calData.forEach(function(c){ if(BLOQUEA[c.estado] && windowOverlap(c.fecha_evento,k)) c.cotizacion_items.forEach(function(i){ used[i.item_id]=(used[i.item_id]||0)+i.cantidad; }); });
+  calData.forEach(function(c){ if(BLOQUEA[c.estado] && windowOverlap(c.fecha_evento,k)) c.cotizacion_items.forEach(function(i){ used[i.item_id]=(used[i.item_id]||0)+i.cantidad*(i.en_unidades?1:packDe(i.item_id)); }); });
   var ids = Object.keys(used);
   h += '<h3 style="margin-top:14px">Piezas comprometidas ese día</h3><p class="meta">Cuenta eventos confirmados con entrega '+cfg.antes+' día(s) antes y devolución '+cfg.desp+' día(s) después.</p>';
   if(!ids.length) h += '<p class="meta">Todo el inventario está libre.</p>';
   ids.forEach(function(id){
-    var it = inv.filter(function(x){ return x.item_id===id; })[0], tot = it ? it.unidades : 0, u = used[id], over = u>tot;
-    h += '<div class="use"><span>'+esc(invName(id))+'</span><span class="'+(over?'over-t':'')+'">'+u+' de '+tot+(over?' · faltan '+(u-tot):'')+'</span><div class="meter"><i class="'+(over?'over':'')+'" style="width:'+Math.min(100, tot?Math.round(u/tot*100):100)+'%"></i></div></div>';
+    var it = inv.filter(function(x){ return x.item_id===id; })[0], tot = it ? it.unidades*packDe(id) : 0, u = used[id], over = u>tot;
+    h += '<div class="use"><span>'+esc(invName(id))+(packDe(id)>1?' (piezas)':'')+'</span><span class="'+(over?'over-t':'')+'">'+u+' de '+tot+(over?' · faltan '+(u-tot):'')+'</span><div class="meter"><i class="'+(over?'over':'')+'" style="width:'+Math.min(100, tot?Math.round(u/tot*100):100)+'%"></i></div></div>';
   });
   box.innerHTML = h;
 }
@@ -516,6 +522,14 @@ function loadInv(){
 }
 var CATEGORIAS = [["arcos","Arcos y aros"],["bases","Bases, mesitas y escaleras"],["mesas","Mesas y sillas"],["luces","Letreros LED"],["extras","Accesorios"]];
 function catNombre(id){ var f = CATEGORIAS.filter(function(c){ return c[0]===id; })[0]; return f ? f[1] : id; }
+function resumenPack(fila){
+  var id = fila.getAttribute("data-pid"), it = inv.filter(function(i){ return i.item_id===id; })[0]; if(!it) return;
+  var pk = parseInt($('[data-k="pack"]', fila).value, 10)||1, un = $('[data-k="unidad"]', fila).value.trim(), out = $("[data-ps]", fila);
+  if(pk>1 && un){
+    var pu = it.precio!=null ? " Una unidad cuesta "+dinero(Math.round(Number(it.precio)/pk*100)/100)+" (precio del set ÷ "+pk+")." : "";
+    out.textContent = "Tienes "+it.unidades+" set(s) = "+(it.unidades*pk)+" piezas."+pu;
+  }else{ out.textContent = "Solo se vende el set completo."; }
+}
 function renderInv(){
   var box = $("#inv-list"); box.innerHTML = "";
   inv.filter(function(i){ return i.categoria==null; }).forEach(function(i){
@@ -528,6 +542,12 @@ function renderInv(){
     fr.innerHTML = (tiene ? '<img src="'+i.foto+'" alt="">' : '')+'<span class="meta">Foto: '+(tiene?"personalizada":"la original")+'</span>'+
       '<input type="file" accept="image/*" aria-label="Cambiar la foto de '+esc(i.nombre)+'">'+(tiene?'<button class="btn ghost small" type="button" data-x="quitar-foto">Volver a la original</button>':'');
     box.appendChild(fr);
+    var pk = Number(i.pack||1), un = i.nombre_unidad||"";
+    var pr = document.createElement("div"); pr.className = "invfoto invpack"; pr.setAttribute("data-pid", i.item_id);
+    pr.innerHTML = '<span class="meta">Cada set trae</span><input type="number" min="1" max="50" data-k="pack" value="'+esc(pk)+'" style="width:70px" aria-label="Piezas por set de '+esc(i.nombre)+'"><span class="meta">pieza(s)</span>'+
+      '<input type="text" maxlength="60" data-k="unidad" value="'+esc(un)+'" placeholder="Nombre de una unidad (ej.: Cilindro blanco)" style="width:240px;max-width:100%" aria-label="Nombre de una unidad de '+esc(i.nombre)+'">'+
+      '<button class="btn ghost small" type="button" data-x="guardar-pack">Guardar</button><span class="meta" data-ps></span>';
+    box.appendChild(pr); resumenPack(pr);
   });
   var ex = $("#extra-list"); ex.innerHTML = "";
   var extras = inv.filter(function(i){ return i.categoria!=null; });
@@ -566,6 +586,17 @@ $("#inv-list").addEventListener("click", function(e){
   var b = e.target.closest('button[data-x="quitar-foto"]'); if(!b) return;
   var id = b.closest(".invfoto").getAttribute("data-fid");
   guardarFotoOriginal(id, null, "Volvió la foto original.").catch(function(x){ toast(x.message); });
+});
+$("#inv-list").addEventListener("input", function(e){ var f = e.target.closest(".invpack"); if(f) resumenPack(f); });
+$("#inv-list").addEventListener("click", function(e){
+  var b = e.target.closest('button[data-x="guardar-pack"]'); if(!b) return;
+  var f = b.closest(".invpack"), id = f.getAttribute("data-pid");
+  var pk = parseInt($('[data-k="pack"]', f).value, 10), un = limpio($('[data-k="unidad"]', f).value);
+  if(isNaN(pk) || pk<1 || pk>50){ toast("Las piezas por set deben estar entre 1 y 50"); return; }
+  if(pk>1 && !un){ toast("Escribe el nombre de una unidad (por ejemplo, Cilindro blanco)"); return; }
+  api("inventario?item_id=eq."+encodeURIComponent(id), {method:"PATCH", body:{pack:pk, nombre_unidad:(pk>1?un:null)}, headers:{"Prefer":"return=representation"}})
+    .then(function(r){ if(!r||!r.length) throw new Error("No se guardó. ¿Corriste el archivo 05-piezas-por-unidad.sql?"); inv.forEach(function(i){ if(i.item_id===id){ i.pack=pk; i.nombre_unidad=(pk>1?un:null); } }); renderInv(); toast(pk>1 ? "Guardado. Ahora se puede pedir por unidad." : "Guardado. Solo se vende completa."); })
+    .catch(function(x){ toast(x.message); });
 });
 $("#c-save").addEventListener("click", function(){
   var a = parseInt($("#c-antes").value,10), d = parseInt($("#c-desp").value,10);
@@ -620,10 +651,13 @@ $("#npForm").addEventListener("submit", function(e){
   if(nombre.length < 2){ msg.textContent = "Escribe el nombre de la pieza."; return; }
   if(isNaN(precio) || precio < 0 || precio > 500){ msg.textContent = "El precio debe estar entre 0 y 500."; return; }
   if(isNaN(unid) || unid < 0 || unid > 999){ msg.textContent = "Las unidades deben estar entre 0 y 999."; return; }
+  var pkn = parseInt($("#np-pack").value, 10) || 1, unn = limpio($("#np-unidad").value);
+  if(pkn<1 || pkn>50){ msg.textContent = "Las piezas por set deben estar entre 1 y 50."; return; }
+  if(pkn>1 && !unn){ msg.textContent = "Escribe el nombre de una unidad, por ejemplo Mesita dorada."; return; }
   btn.disabled = true;
   var file = $("#np-foto").files[0];
   (file ? leerFoto(file) : Promise.resolve(null)).then(function(foto){
-    var body = {item_id:slugDe(nombre), nombre:nombre, descripcion:desc, precio:precio, unidades:unid, categoria:cat, cuenta_descuento:$("#np-cuenta").checked, activo:true, foto:foto};
+    var body = {item_id:slugDe(nombre), nombre:nombre, descripcion:desc, precio:precio, unidades:unid, categoria:cat, cuenta_descuento:$("#np-cuenta").checked, activo:true, foto:foto, pack:pkn, nombre_unidad:(pkn>1?unn:null)};
     return api("inventario", {method:"POST", body:body, headers:{"Prefer":"return=representation"}});
   }).then(function(r){
     if(!r || !r.length) throw new Error("No se guardó. ¿Corriste el archivo 02-piezas-nuevas-y-pdf.sql en Supabase?");
@@ -654,7 +688,12 @@ $("#extra-list").addEventListener("click", function(e){
 var okFotoRe = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
 var combos = [], temps = [], ORIGINALES = {c1:1,c2:1,c3:1,c4:1,c5:1,c6:1};
 function dinero(n){ var c = Math.round(Number(n||0)*100); return "$"+(c%100===0 ? String(c/100) : (c/100).toFixed(2)); }
-function precioItem(id){ var f = inv.filter(function(i){ return i.item_id===id; })[0]; return f && f.precio!=null ? Number(f.precio) : 0; }
+function precioItem(id){
+  var esU = /--u$/.test(id), base = esU ? id.slice(0,-3) : id;
+  var f = inv.filter(function(i){ return i.item_id===base; })[0];
+  if(!f || f.precio==null) return 0;
+  return esU ? Math.round(Number(f.precio)/Math.max(1,Number(f.pack||1))*100)/100 : Number(f.precio);
+}
 
 /* Precios */
 function renderPre(){
@@ -663,14 +702,18 @@ function renderPre(){
   inv.slice().sort(function(a,b){ return a.nombre.localeCompare(b.nombre,"es"); }).forEach(function(i){
     var row = document.createElement("div"); row.className = "prow"; row.setAttribute("data-id", i.item_id);
     var v = i.precio==null ? "" : i.precio;
-    row.innerHTML = '<span class="nm">'+esc(i.nombre)+(i.categoria?' <small class="meta">(pieza nueva)</small>':'')+'</span>'+
+    var pkx = Number(i.pack||1);
+    row.setAttribute("data-pack", pkx>1 && i.nombre_unidad ? pkx : 1);
+    row.innerHTML = '<span class="nm">'+esc(i.nombre)+(i.categoria?' <small class="meta">(pieza nueva)</small>':'')+(pkx>1&&i.nombre_unidad?' <small class="meta" data-up>Unidad: '+dinero(i.precio==null?0:Math.round(Number(i.precio)/pkx*100)/100)+'</small>':'')+'</span>'+
       '<label class="pr">$<input type="number" min="0" max="500" step="0.5" data-orig="'+esc(v)+'" value="'+esc(v)+'" aria-label="Precio de '+esc(i.nombre)+'"></label>';
     box.appendChild(row);
   });
 }
 $("#pre-list").addEventListener("input", function(e){
   var inp = e.target; if(inp.tagName!=="INPUT") return;
-  inp.closest(".prow").classList.toggle("cambio", inp.value !== inp.getAttribute("data-orig"));
+  var fila = inp.closest(".prow"), pk = Number(fila.getAttribute("data-pack")||1), up = $("[data-up]", fila);
+  fila.classList.toggle("cambio", inp.value !== inp.getAttribute("data-orig"));
+  if(up && pk>1 && inp.value!=="" && !isNaN(Number(inp.value))) up.textContent = "Unidad: "+dinero(Math.round(Number(inp.value)/pk*100)/100);
 });
 $("#pre-save").addEventListener("click", function(){
   var filas = $$("#pre-list .prow.cambio");
@@ -693,9 +736,14 @@ $("#pre-save").addEventListener("click", function(){
 /* Editor de piezas de un combo */
 function peHtml(items){
   var cnt = {}; (items||[]).forEach(function(id){ cnt[id] = (cnt[id]||0)+1; });
-  return inv.filter(function(i){ return i.activo || cnt[i.item_id]; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre,"es"); }).map(function(i){
-    return '<label class="perow"><span>'+esc(i.nombre)+' <small class="meta">'+dinero(precioItem(i.item_id))+'</small></span>'+
-      '<input type="number" min="0" max="9" step="1" data-pid="'+esc(i.item_id)+'" value="'+(cnt[i.item_id]||0)+'" aria-label="Cantidad de '+esc(i.nombre)+'"></label>';
+  var filas = [];
+  inv.filter(function(i){ return i.activo || cnt[i.item_id] || cnt[i.item_id+"--u"]; }).sort(function(a,b){ return a.nombre.localeCompare(b.nombre,"es"); }).forEach(function(i){
+    filas.push({id:i.item_id, nombre:i.nombre});
+    if(i.pack>1 && i.nombre_unidad) filas.push({id:i.item_id+"--u", nombre:i.nombre_unidad+" (unidad)"});
+  });
+  return filas.map(function(f){
+    return '<label class="perow"><span>'+esc(f.nombre)+' <small class="meta">'+dinero(precioItem(f.id))+'</small></span>'+
+      '<input type="number" min="0" max="9" step="1" data-pid="'+esc(f.id)+'" value="'+(cnt[f.id]||0)+'" aria-label="Cantidad de '+esc(f.nombre)+'"></label>';
   }).join("");
 }
 function peLeer(box){

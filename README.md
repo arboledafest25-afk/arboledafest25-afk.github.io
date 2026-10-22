@@ -136,3 +136,16 @@ Cosas a tener en cuenta:
 - Las cotizaciones guardadas conservan el total con el que se hicieron.
 - Los flyers de Instagram no se actualizan solos: si cambias un precio que sale en un flyer, hay que cambiar el flyer.
 - Para instalarla: corre una vez `supabase/04-precios-combos-temporadas.sql` en el SQL Editor de Supabase y sube `index.html` y `admin.html` a GitHub. Este archivo ya incluye lo de la actualización 3.
+
+---
+
+## Actualización 5: piezas que se pueden pedir por unidad
+
+Algunas piezas vienen en sets (el set de 3 cilindros y el set de 4 mesitas). Ahora el cliente puede pedir **una sola pieza**, y el precio de cada una sale del precio del set dividido entre las piezas que trae (por ejemplo, set de cilindros $18 ÷ 3 = $6 cada uno; set de mesitas $14 ÷ 4 = $3.50 cada una).
+
+- En el cotizador aparece una tarjeta nueva debajo de cada set, por ejemplo "Cilindro blanco (unidad)". La cotización, el mensaje de WhatsApp y el PDF dicen exactamente lo que el cliente pidió ("2 × Cilindro blanco (unidad)"), nunca el set completo.
+- En **Combos** puedes armar un combo con una sola mesita o un solo cilindro: en el editor de piezas aparecen las dos opciones, el set y la unidad.
+- Si cambias el precio de un set en **Precios**, el precio de la unidad se actualiza solo.
+- En **Inventario**, bajo cada pieza, la fila **Cada set trae N piezas** define cuántas piezas trae un set y cómo se llama una unidad. Con 1 pieza por set, la pieza solo se vende completa. También puedes definirlo al agregar una pieza nueva.
+- **La disponibilidad se cuenta en piezas.** Las unidades que escribes en Inventario siguen siendo sets (2 sets de cilindros = 6 piezas). Si alguien reserva 1 cilindro suelto, quedan 5 piezas libres para esa fecha, ya sea para unidades o para un set. El calendario del panel también muestra las piezas.
+- Para instalarla: corre una vez `supabase/05-piezas-por-unidad.sql` en el SQL Editor de Supabase (después del 04) y sube `index.html` y `admin.html` a GitHub.

@@ -787,10 +787,11 @@ footer b{color:var(--ink)}
               <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.700 6.700 0 0 1-3.300-2.900c-.2-.4.2-.4.7-1.300.1-.2 0-.3 0-.5l-.8-1.800c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.100-.7.300-.2.300-1 1-1 2.400s1 2.800 1.200 3c.1.200 2 3.100 4.900 4.300 1.800.8 2.500.8 3.400.7.600-.1 1.500-.6 1.700-1.200.2-.6.200-1.100.2-1.200-.1-.1-.3-.2-.6-.3z"/></svg>
               <span id="send-label">Enviar por WhatsApp y revisar mi fecha</span>
             </a>
-            <button type="button" class="btn ghost" id="print">Descargar o compartir PDF</button>
+            <button type="button" class="btn ghost" id="print">Guardar mi cotización en PDF</button>
             <button type="button" class="btn ghost" id="reset">Empezar una cotización nueva</button>
           </div>
-          <p class="note">Consejo: descarga tu PDF y adjúntalo en el chat de WhatsApp para tener tu cotización completa.</p>
+          <p class="note">El botón verde envía tu cotización a nuestro WhatsApp. El PDF es una copia para ti: se guarda en tu teléfono y puedes adjuntarlo en el chat con el clip.</p>
+          <p class="note" id="pdf-tip" hidden><b>Estás dentro de Instagram.</b> Ahí el PDF a veces no se puede guardar. Toca los tres puntos (⋮) de arriba y elige «Abrir en el navegador» para descargarlo.</p>
 
           <details class="rules">
             <summary>Antes de reservar</summary>
@@ -1400,6 +1401,7 @@ if(DB){
     }).catch(function(){});
   }catch(e){}
 }
+if(/Instagram|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent)){ var tip=$("#pdf-tip"); if(tip) tip.hidden=false; }
 load();
 if(state.form.date && new Date(state.form.date+"T00:00:00")<today) state.form.date="";
 syncForm();

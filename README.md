@@ -149,3 +149,13 @@ Algunas piezas vienen en sets (el set de 3 cilindros y el set de 4 mesitas). Aho
 - En **Inventario**, bajo cada pieza, la fila **Cada set trae N piezas** define cuántas piezas trae un set y cómo se llama una unidad. Con 1 pieza por set, la pieza solo se vende completa. También puedes definirlo al agregar una pieza nueva.
 - **La disponibilidad se cuenta en piezas.** Las unidades que escribes en Inventario siguen siendo sets (2 sets de cilindros = 6 piezas). Si alguien reserva 1 cilindro suelto, quedan 5 piezas libres para esa fecha, ya sea para unidades o para un set. El calendario del panel también muestra las piezas.
 - Para instalarla: corre una vez `supabase/05-piezas-por-unidad.sql` en el SQL Editor de Supabase (después del 04) y sube `index.html` y `admin.html` a GitHub.
+
+---
+
+## Actualización 6: una sola tarjeta para los sets
+
+Las piezas que vienen en sets (cilindros, mesitas) ahora aparecen en **una sola tarjeta**. El contador va de 1 en 1 en piezas, y el precio de cada pieza es el del set dividido entre sus piezas. Cuando el cliente completa un set, el cotizador se lo dice ("Elegiste 1 set de 3 piezas"); si pasa de un set, dice por ejemplo "1 set de 3 piezas + 1 pieza suelta".
+
+- En la cotización, el mensaje de WhatsApp y el PDF las líneas siguen siendo claras: "1 × Set de 3 cilindros" para el set y "2 × Cilindro blanco (unidad)" para las piezas sueltas.
+- Para los descuentos por cantidad, un set cuenta como 1 pieza y cada pieza suelta cuenta como una fracción, así que pedir más piezas nunca baja el avance del medidor.
+- No hay que correr ningún SQL nuevo: solo sube `index.html` a GitHub.

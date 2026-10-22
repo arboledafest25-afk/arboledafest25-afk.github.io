@@ -129,6 +129,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .foot-row{grid-column:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
 .price{font-weight:800;font-size:1.15rem;color:var(--green)}
 .price small{font-weight:600;font-size:.78rem;color:var(--ink2)}
+.packnote{display:block;margin-top:5px;font-size:.8rem;font-weight:700;color:var(--ink2)}
+.packnote.ok{color:var(--green2)}
 .stepper{display:inline-flex;align-items:center;background:var(--surface2);border-radius:999px;padding:3px}
 .stepper button{width:40px;height:40px;border-radius:50%;border:0;background:var(--surface);cursor:pointer;font-size:1.3rem;font-weight:800;line-height:1;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .stepper button:disabled{opacity:.35;cursor:default}
@@ -895,6 +897,19 @@ var ICONS = {
 };
 
 var byId = {}; ITEMS.forEach(function(i){ byId[i.id]=i; });
+function piezasDe(id,pk){ return (state.cart[id]||0)*pk + (state.cart[id+"--u"]||0); }
+function fijarPiezas(id,pk,n){
+  var sets=Math.floor(n/pk), uds=n%pk;
+  if(sets>0) state.cart[id]=Math.min(sets,99); else delete state.cart[id];
+  if(uds>0) state.cart[id+"--u"]=uds; else delete state.cart[id+"--u"];
+}
+function textoSet(pk,n){
+  var sets=Math.floor(n/pk), uds=n%pk;
+  if(n===0) return "Elige de 1 en 1: "+pk+" piezas forman 1 set.";
+  if(sets===0) return n+(n===1?" pieza":" piezas")+". Con "+pk+" ya es 1 set.";
+  var t="Elegiste "+sets+(sets===1?" set":" sets")+" de "+pk+" piezas";
+  return uds ? t+" + "+uds+(uds===1?" pieza suelta":" piezas sueltas") : t;
+}
 /* Las piezas que vienen en sets (pack > 1) también se pueden pedir por unidad: precio del set dividido entre sus piezas */
 function generarUnidades(){
   for(var i=ITEMS.length-1;i>=0;i--){ if(ITEMS[i].unitOf){ delete byId[ITEMS[i].id]; ITEMS.splice(i,1); } }
@@ -970,17 +985,17 @@ function quote(){
   var loose=[], looseSub=0, loosePieces=0, indivTotal=0;
   ITEMS.forEach(function(it){
     var q=cov.rem[it.id]||0;
-    if(q>0){ loose.push({it:it,q:q,total:q*it.price}); looseSub+=q*it.price; if(it.counts) loosePieces+=q; }
+    if(q>0){ loose.push({it:it,q:q,total:q*it.price}); looseSub+=q*it.price; if(it.counts) loosePieces+=q*(it.unitOf ? 1/byId[it.unitOf].pack : 1); }
     indivTotal+=(state.cart[it.id]||0)*it.price;
   });
-  var tierIdx=-1; CONFIG.tiers.forEach(function(t,i){ if(loosePieces>=t.min) tierIdx=i; });
+  var tierIdx=-1; CONFIG.tiers.forEach(function(t,i){ if(loosePieces+1e-9>=t.min) tierIdx=i; });
   var tier = tierIdx>=0 ? CONFIG.tiers[tierIdx] : null;
   var discount = tier ? Math.round(looseSub*tier.pct)/100 : 0;
   var gifts = tier ? tier.gifts.map(function(id){return byId[id];}) : [];
   var giftValue = gifts.reduce(function(s,g){return s+g.price;},0);
   var hasAny = comboLines.length>0 || loose.length>0;
   var base = comboTotal+looseSub-discount, temp = temporadaPara(state.form.date), tadj = temp ? Math.round(base*temp.pct)/100 : 0;
-  return { comboLines:comboLines, comboTotal:comboTotal, comboSaved:comboSaved, loose:loose, looseSub:looseSub, pieces:loosePieces,
+  return { comboLines:comboLines, comboTotal:comboTotal, comboSaved:comboSaved, loose:loose, looseSub:looseSub, pieces:Math.round(loosePieces*100)/100,
            tierIdx:tierIdx, tier:tier, discount:discount, gifts:gifts, giftValue:giftValue, indivTotal:indivTotal,
            total:base+tadj, temp:temp, tadj:tadj, saved:comboSaved+discount+giftValue, next:CONFIG.tiers[tierIdx+1]||null, hasAny:hasAny };
 }
@@ -1017,11 +1032,12 @@ COMBOS.map(function(c){
 
 $("#catalog-list").innerHTML = combosHtml + CATS.map(function(c){
   return '<section class="cat" id="cat-'+c.id+'"><h3>'+c.name+'</h3><div class="grid">'+
-    ITEMS.filter(function(i){return i.cat===c.id;}).map(function(it){
-      return '<article class="card" data-id="'+it.id+'">'+
+    ITEMS.filter(function(i){return i.cat===c.id && !i.unitOf;}).map(function(it){
+      var pk=(it.pack>1 && it.unitName && byId[it.id+"--u"]) ? it.pack : 1, un=pk>1 ? byId[it.id+"--u"] : null;
+      return '<article class="card" data-id="'+it.id+'"'+(pk>1?' data-pack="'+pk+'"':'')+'>'+
         '<div class="thumb">'+thumb(it)+'</div>'+
-        '<div class="info"><h4>'+it.name+'</h4><p>'+it.desc+'</p></div>'+
-        '<div class="foot-row"><div class="price">'+fmt(it.price)+' <small>c/u</small></div>'+
+        '<div class="info"><h4>'+it.name+'</h4><p>'+it.desc+'</p>'+(pk>1?'<span class="packnote" data-pn></span>':'')+'</div>'+
+        '<div class="foot-row"><div class="price">'+(pk>1 ? fmt(un.price)+' <small>c/u · set de '+pk+': '+fmt(it.price)+'</small>' : fmt(it.price)+' <small>c/u</small>')+'</div>'+
         '<div class="stepper" role="group" aria-label="Cantidad de '+it.name+'">'+
         '<button type="button" data-act="dec" aria-label="Quitar una unidad de '+it.name+'">−</button>'+
         '<output aria-live="polite">0</output>'+
@@ -1041,9 +1057,11 @@ $("#catalog-list").addEventListener("click", function(e){
     return;
   }
   var b = e.target.closest("button[data-act]"); if(!b) return;
-  var id = b.closest(".card").getAttribute("data-id");
+  var card = b.closest(".card"), id = card.getAttribute("data-id"), pk = parseInt(card.getAttribute("data-pack")||"1",10);
+  var inc = b.getAttribute("data-act")==="inc";
+  if(pk>1){ fijarPiezas(id,pk,Math.max(0,Math.min(piezasDe(id,pk)+(inc?1:-1),99*pk))); update(true); return; }
   var q = state.cart[id]||0;
-  q = b.getAttribute("data-act")==="inc" ? Math.min(q+1,99) : Math.max(q-1,0);
+  q = inc ? Math.min(q+1,99) : Math.max(q-1,0);
   if(q===0) delete state.cart[id]; else state.cart[id]=q;
   update(true);
 });
@@ -1067,9 +1085,10 @@ function update(fromClick){
   var q = quote();
 
   document.querySelectorAll(".card").forEach(function(card){
-    var id=card.getAttribute("data-id"), n=state.cart[id]||0;
+    var id=card.getAttribute("data-id"), pk=parseInt(card.getAttribute("data-pack")||"1",10), n=pk>1 ? piezasDe(id,pk) : (state.cart[id]||0);
     card.classList.toggle("on", n>0);
     card.querySelector("output").textContent=n;
+    if(pk>1){ var pn=card.querySelector("[data-pn]"); pn.textContent=textoSet(pk,n); pn.classList.toggle("ok", n>0 && n%pk===0); }
     card.querySelector('[data-act="dec"]').disabled = n===0;
   });
   var usedBy={}; q.comboLines.forEach(function(l){ usedBy[l.c.id]=(usedBy[l.c.id]||0)+l.q; });
@@ -1088,7 +1107,7 @@ function update(fromClick){
   var hint;
   if(!q.next){ hint="¡Llegaste al máximo! Tus piezas tienen el mejor precio."; }
   else{
-    var faltan=q.next.min-q.pieces, cur=q.tier?q.tier.gifts:[];
+    var faltan=Math.ceil(q.next.min-q.pieces-1e-9), cur=q.tier?q.tier.gifts:[];
     var nuevos=q.next.gifts.filter(function(g){return cur.indexOf(g)<0;});
     hint="Agrega "+faltan+(faltan===1?" pieza más":" piezas más")+" y obtén "+q.next.pct+" % menos"+(nuevos.length?", más "+giftNames(nuevos)+" de regalo":"")+".";
   }

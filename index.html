@@ -129,6 +129,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .foot-row{grid-column:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
 .price{font-weight:800;font-size:1.15rem;color:var(--green)}
 .price small{font-weight:600;font-size:.78rem;color:var(--ink2)}
+.price .sub{display:block;font-weight:600;font-size:.78rem;color:var(--ink2);line-height:1.2;margin-top:1px}
 .packnote{display:block;margin-top:5px;font-size:.8rem;font-weight:700;color:var(--ink2)}
 .packnote.ok{color:var(--green2)}
 .stepper{display:inline-flex;align-items:center;background:var(--surface2);border-radius:999px;padding:3px}
@@ -1037,7 +1038,7 @@ $("#catalog-list").innerHTML = combosHtml + CATS.map(function(c){
       return '<article class="card" data-id="'+it.id+'"'+(pk>1?' data-pack="'+pk+'"':'')+'>'+
         '<div class="thumb">'+thumb(it)+'</div>'+
         '<div class="info"><h4>'+it.name+'</h4><p>'+it.desc+'</p>'+(pk>1?'<span class="packnote" data-pn></span>':'')+'</div>'+
-        '<div class="foot-row"><div class="price">'+(pk>1 ? fmt(un.price)+' <small>c/u · set de '+pk+': '+fmt(it.price)+'</small>' : fmt(it.price)+' <small>c/u</small>')+'</div>'+
+        '<div class="foot-row"><div class="price">'+(pk>1 ? fmt(it.price)+' <small>set de '+pk+'</small><span class="sub">o '+fmt(un.price)+' por pieza</span>' : fmt(it.price)+' <small>c/u</small>')+'</div>'+
         '<div class="stepper" role="group" aria-label="Cantidad de '+it.name+'">'+
         '<button type="button" data-act="dec" aria-label="Quitar una unidad de '+it.name+'">−</button>'+
         '<output aria-live="polite">0</output>'+
